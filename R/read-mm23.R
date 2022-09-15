@@ -11,6 +11,7 @@ library(janitor)
 # x <- read.csv("https://www.ons.gov.uk/file?uri=/economy/inflationandpriceindices/datasets/consumerpriceindices/current/mm23.csv")
 # write_csv(x, here("data", "raw", "mm23.csv"))
 
+download.file("https://www.ons.gov.uk/file?uri=/economy/inflationandpriceindices/datasets/consumerpriceindices/current/mm23.csv", here("data", "raw","mm23.csv"))
 
 metadata <- read_csv(here("data", "raw", "mm23.csv"), n_max = 6) %>% 
             t() %>% 
