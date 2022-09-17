@@ -1,0 +1,506 @@
+---
+title: "Inflation explorer"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+    theme:
+      version: 4
+      bootswatch: minty
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(here)
+library(tidyverse)
+library(tidyr)
+library(lubridate)
+library(ggplot2)
+library(janitor)
+library(scales)
+library(DT)
+library(thematic)
+library(bslib)
+library(shinyWidgets)
+
+theme_set(theme_minimal())
+thematic::thematic_shiny(qualitative = palette.colors(palette = "Dark 2"))
+# bslib::bs_themer()
+
+# data files--------------------------------------------------------------------
+metadata <- read_rds(here("data", "tidy", "metadata.rds"))
+mm23_month <- read_rds(here("data", "tidy", "mm23_month.rds"))
+rpi_cdids <- read_rds(here("data", "tidy", "rpi_avg_price_cdids.rds"))
+cpih_cont_ann <- readRDS(here("data", "tidy", "cpih_cont_ann_cdids.rds"))
+cpih_cont_ann_chg <- read_rds(here("data", "tidy", "cpih_cont_ann_chg_cdids.rds"))
+
+# setup vars--------------------------------------------------------------------
+release_date <- dmy(max(metadata$release_date))
+next_release_date <- dmy(max(metadata$next_release))
+
+# current data date
+latest_date <- max(mm23_month$date)
+latest_month <- month(latest_date, label = TRUE, abbr = FALSE)
+latest_year <- year(latest_date)
+
+# same date last year and month
+last_year <- latest_date %m-% years(1)
+last_month <- latest_date %m-% months(1)
+
+# chart common theme ------------------------------------------------------------
+
+chart_theme <- theme(text = element_text(size = 16))
+
+# cpih annual rate chart -------------------------------------------------------
+cpih_chart <- function(cdids, start_date = "2020-01-01", labels){
+  if(missing(labels))(labels = cdids)
+  
+  data <- mm23_month %>% 
+    filter(cdid %in% cdids & value != is.na(value) & date >= start_date) %>% 
+  ggplot() +
+    geom_line(aes(x = date, y = value, colour = cdid), size = 1) +
+    scale_color_discrete(breaks = cdids, labels = labels) +
+    # labs(colour = labels) +
+    scale_y_continuous(labels = label_percent(scale = 1,accuracy = 0.1),breaks = breaks_extended(10)) +
+    scale_x_date(date_labels = "%b %Y") +
+    # theme_minimal() +
+    theme(text = element_text(size = 20))
+  
+}
+
+# rpi chart --------------------------------------------------------------------
+rpi_chart <- function(cdids, start_date = "2020-01-01", labels){
+  if(missing(labels))(labels = cdids)
+  
+  data <- mm23_month %>% 
+    filter(cdid %in% cdids & value != is.na(value) & date >= start_date) %>% 
+  ggplot() +
+    geom_line(aes(x = date, y = value, colour = cdid), size = 1) +
+    scale_color_discrete(breaks = cdids, labels = labels) +
+    # scale_y_continuous(labels = label_percent(scale = 1,accuracy = 0.1),breaks = breaks_extended(10)) +
+    # labs(colour = labels) +
+    scale_x_date(date_labels = "%b %Y") +
+    # theme_minimal() +
+    theme(text = element_text(size = 20))
+}
+
+
+```
+
+# CPIH
+
+## CPIH Inputs {.sidebar data-width=350}
+
+```{r cpih-sidebar}
+
+# CPIH inputs ------------------------------------------------------------------
+
+# show latest date info
+renderText(paste("Latest date:", latest_date))
+br()
+
+# picker for month or annual. Other inputs need to react to this
+radioButtons(inputId = "cpih_rate_rb",
+             choices = list("Annual rate" = "cpih_ann_rate_cdids.rds",
+                            "Monthly rate" = "cpih_mth_rate_cdids.rds"),
+             label = "Choose rate (selections will be reset):")
+
+# series level picker
+checkboxGroupInput("cpih_levels_cbg",
+                   label = "Choose product level",
+                   choiceNames = list("class", "group", "category", "product"),
+                   choiceValues = list(1,2,3,4),
+                   inline = TRUE)
+
+# series selector
+# shinywidgets pickerinput is an alternative option
+selectInput("cpih_series_si",
+            label = "Choose series:",
+            choices = NULL, 
+            multiple = TRUE)
+
+# start date picker and reactive value
+dateInput(inputId = "cpih_startdate_di",
+          label = "Choose start date:",
+          value = "2020-01-01")
+
+cpih_startdate <- reactive(input$cpih_startdate_di)
+
+# facet checkbox and reactive value
+checkboxInput(inputId = "cpih_facet_cb",
+              label = "Facet chart",
+              value = FALSE)
+
+cpih_facet <- reactive(input$cpih_facet_cb)
+
+# CPIH input reactives ---------------------------------------------------------
+
+# cdid data reacts to chosen rate
+# loads relevant metadata
+# bindcache should help speed up
+cpih_cdids <- reactive({
+  x <- read_rds(here("data", "tidy", input$cpih_rate_rb))
+}) %>% bindCache(input$cpih_rate_rb)
+
+# clear levels and series when month/annual rate changes
+observe( {
+  updateSelectInput(session, "cpih_levels_cbg", selected = character(0))
+  updateSelectInput(session, "cpih_series_si", selected = character(0), choices = character(0))
+}) %>% bindEvent(input$cpih_rate_rb)
+
+# series selector reacts to levels chosen
+observeEvent(input$cpih_levels_cbg, {
+  cpih <- cpih_cdids() %>%
+  filter(level %in% input$cpih_levels_cbg) %>%
+  select(cdid, title)
+
+  cpih <- setNames(cpih$cdid, cpih$title)
+  updateSelectInput(session, "cpih_series_si", label = "Choose series:", choices = cpih)
+})
+
+#
+# This is the key reactive: the actual data that is selected from the content of
+# the inputs that powers the charts and the download - delete some of the other
+# stuff
+cpih_data <- reactive({
+    data <- mm23_month %>%
+      filter(cdid %in% input$cpih_series_si & value != is.na(value) & date >= input$cpih_startdate_di) %>%
+      left_join(cpih_cdids())
+  })
+
+
+
+# CPIH data download
+uiOutput("cpih_downloadui")
+
+output$cpih_downloadui <- renderUI ({
+downloadButton(outputId = "cpih_download", label = "Download data")
+})
+
+  # download handler
+  output$cpih_download <- downloadHandler(
+    filename = function() {
+      paste("data-", format(Sys.time(), "%Y-%m-%d-%H%M%S"), ".csv", sep="")
+    },
+    content = function(file) {
+      write.csv(cpih_data(), file)
+    }
+  )
+
+# Show slected cdids for reference
+renderText("Selected CDIDs:")
+renderText(input$cpih_series_si)
+
+
+```
+
+## Column {data-width="350" .tabset}
+
+### CPIH Chart
+
+```{r cpih-chart}
+
+# # cpih_data is now the key reactive - a lot of others can be deleted. And
+# remove the chart functions and just stick them in a render plot
+renderPlot({
+  
+ cht <-   cpih_data() %>% 
+      # mutate(title = str_remove(title, "CPIH MONTHLY RATE ")) %>% 
+      # mutate(title = str_remove(title, "CPIH ANNUAL RATE ")) %>% 
+      # mutate(title = str_remove(title, " 2015=100")) %>% 
+       ggplot() +
+    geom_line(aes(x = date, y = value, colour = title), size = 1) +
+    scale_y_continuous(labels = label_percent(scale = 1,accuracy = 0.1),
+                       breaks = breaks_extended(10)) +
+    scale_x_date(date_labels = "%b %Y") +
+    chart_theme
+   
+ 
+  if(cpih_facet() == FALSE){ 
+    cht
+    } else {
+    cht + 
+      facet_wrap(~title, labeller = label_wrap_gen(width = 25)) +
+      theme(legend.position = "none")
+    }
+
+})
+
+```
+
+### CPIH Data table
+
+```{r cpih-table}
+
+renderDataTable(cpih_data())
+
+```
+
+
+# RPI Average prices
+
+## RPI Inputs {.sidebar data-width=350}
+
+```{r rpi-sidebar}
+
+# series choices for selectinput
+rpi <- rpi_cdids %>% 
+        select(cdid, title)
+
+rpi <- setNames(rpi$cdid, rpi$title)
+  
+# RPI Inputs -------------------------------------------------------------------
+
+renderText(paste("Latest date:", latest_date))
+br()
+
+selectInput(inputId = "rpi_series_si", 
+            label = "Choose series:",
+            choices = rpi, 
+            multiple = TRUE)
+
+dateInput("rpi_startdate_di", label = "Start date:", value = "2020-01-01" )
+
+checkboxInput("rpi_facet_cb", label = "Facet chart")
+rpi_facet <- reactive(input$rpi_facet_cb)
+
+
+# RPI key reactive
+rpi_data <- reactive({
+    data <- mm23_month %>%
+      filter(cdid %in% input$rpi_series_si & value != is.na(value) & date >= input$rpi_startdate_di) %>%
+      left_join(rpi_cdids)
+
+  })
+
+
+
+# rpi data download
+uiOutput("rpi_downloadui")
+
+output$rpi_downloadui <- renderUI ({
+downloadButton(outputId = "rpi_download", label = "Download data")
+})
+
+
+  # download handler
+  output$rpi_download <- downloadHandler(
+    filename = function() {
+      paste("data-", format(Sys.time(), "%Y-%m-%d-%H%M%S"), ".csv", sep="")
+    },
+    content = function(file) {
+      write.csv(rpi_data(), file)
+    }
+  )
+
+
+
+
+
+
+```
+
+## Column {data-width="350" .tabset}
+
+### RPI chart
+
+```{r rpi-chart}
+
+renderPlot({
+  
+  cht <- rpi_data() %>%
+          ggplot() +
+          geom_line(aes(x = date, y = value, colour = title), size = 1) +
+          scale_x_date(date_labels = "%b %Y") +
+          chart_theme
+  
+  if(rpi_facet() == FALSE){ 
+    cht
+    } else {
+    cht + 
+      facet_wrap(~title, labeller = label_wrap_gen(width = 25)) +
+      theme(legend.position = "none")
+    }
+
+
+})
+
+
+```
+
+### RPI Data table
+
+```{r rpi-data-table}
+rpi_data_table <- reactive({
+    data <- mm23_month %>%
+      filter(cdid %in% input$rpi_series_si & value != is.na(value) & date >= input$rpi_startdate_di) %>%
+      left_join(metadata)
+
+  })
+
+renderDataTable(rpi_data_table())
+
+```
+
+### RPI price table
+
+```{r rpi-price-table}
+
+get_series_metadata <- function(seriesid){
+
+metadata <- readr::read_rds(here::here("data", "tidy", "metadata.rds"))
+
+ series <- metadata %>% 
+           dplyr::filter(cdid == seriesid)
+ # browser()
+ if(nrow(series) != 1){
+   stop("Error: CDID not found")
+ }
+
+ out <- list(
+   cdid = series$cdid,
+   title = series$title,
+   pre_unit = series$pre_unit,
+   unit = series$unit,
+   release_date = series$release_date,
+   next_release = series$next_release,
+   important_notes = series$important_notes
+ )
+ 
+ return(out)
+  
+}
+
+# text for up and down
+eval_change <- function(num1, num2) {
+  text <-  ""
+  
+  if (num1 == num2){
+    text = "unchanged"
+  }
+  
+  if(num1 < num2){
+    text =  "down"
+  }
+  
+  if(num1 > num2){
+    text =  "up"
+  }
+  return(text)
+}
+
+# latest prices
+rp_compare <- function(seriesid, date1, date2){
+  
+text <- paste0(
+  "£",
+  get_val(seriesid, date1)/100,
+  ", ",
+  eval_change(get_val(seriesid, date1)/100, get_val(seriesid, date2)/100),
+  " from £",
+  get_val(seriesid, date2)/100,
+  " in ",
+  month(date2, label = TRUE, abbr = FALSE),
+  " ",
+  year(date2)
+)
+
+return(text)
+
+}
+
+# get the value for a series and date
+get_val <- function(cdidcode, series_date){
+  
+  val <- mm23_month %>% 
+    filter(cdid == cdidcode & date == series_date) %>% 
+    pull(value)
+  
+  val
+  
+}
+
+
+# col1 <- reactive({
+# x <- purrr::map(input$rpi_series_si, get_series_metadata) 
+# col1 <- x %>% purrr::map(list("title")) %>% unlist
+# })
+# 
+# # renderText(col1())
+# 
+# col2 <- reactive({
+#   purrr::pmap(list(input$rpi_series_si, rep(latest_date, length(input$rpi_series_si)), rep(last_month, length(input$rpi_series_si)) ) , rp_compare) %>% unlist
+# })
+# 
+# 
+# # renderText(col2())
+# 
+# col3 <- reactive({purrr::map2(input$rpi_series_si, last_year, get_val) %>% unlist %>% dollar(scale = 0.01, prefix = "£")
+# })
+# 
+# table <- reactive({data.frame(col1(), col2(), col3())
+# })
+# 
+# renderTable(table())
+
+
+rpi_price_table <- reactive({
+  x <- purrr::map(input$rpi_series_si, get_series_metadata) 
+  col1 <- x %>% purrr::map(list("title")) %>% unlist
+  
+  col2 <- purrr::pmap(list(input$rpi_series_si, rep(latest_date, length(input$rpi_series_si)), rep(last_month, length(input$rpi_series_si)) ) , rp_compare) %>% unlist
+  
+   col3 <- purrr::map2(input$rpi_series_si, last_year, get_val) %>% unlist %>% dollar(scale = 0.01, prefix = "£")
+   
+   table <- data.frame(col1, col2, col3) %>% 
+            rename(Product = col1,
+                   `Latest data` = col2,
+                   `Previous year` = col3)
+})
+
+renderTable(rpi_price_table())
+
+```
+
+
+
+# Contribution to rate
+
+## Column
+
+### Contribution to all items annual rate
+```{r}
+
+renderPlot({
+  cpih_cont_ann %>% 
+  left_join(mm23_month) %>% 
+  mutate(title = str_remove(title, "CPIH: Contribution to all items annual rate: ")) %>% 
+  ggplot() +
+  geom_bar(aes(x = date, y = value, fill = title), stat = "identity", position = position_stack()) +
+  labs(title = "CPIH: Contribution to all items annual rate")
+  
+})
+
+
+```
+
+### C
+```{r}
+
+renderPlot({
+  
+  cpih_cont_ann_chg %>% 
+  left_join(mm23_month) %>% 
+  mutate(title = str_remove(title, "CPIH: % points change over previous month \\(12 month rate\\): ")) %>% 
+  filter(date == latest_date & title != "All items(2015=100)") %>% 
+  ggplot() +
+  geom_bar(aes(x = title, y = value), stat = "identity") +
+  coord_flip() + 
+  labs(title = "Contributions to change in the annual CPI inflation rate")
+
+  
+})
+
+```
+

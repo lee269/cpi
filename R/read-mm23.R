@@ -32,7 +32,8 @@ mm23_month <- read_csv(here("data", "raw", "mm23.csv"), skip = 1) %>%
         mutate(CDID = ym(CDID)) %>%
         rename(date = CDID) %>% 
         pivot_longer(cols = 2:ncol(.), names_to = "cdid") %>% 
-        mutate(value = as.numeric(value))
+        mutate(value = as.numeric(value)) %>% 
+        filter(!is.na(value))
 
 saveRDS(mm23_month, here("data", "tidy", "mm23_month.rds"))  
 
@@ -42,7 +43,8 @@ mm23_quarter <- read_csv(here("data", "raw", "mm23.csv"), skip = 1) %>%
   mutate(CDID = yq(CDID)) %>% 
   rename(date = CDID) %>% 
   pivot_longer(cols = 2:ncol(.), names_to = "cdid") %>% 
-  mutate(value = as.numeric(value))
+  mutate(value = as.numeric(value)) %>% 
+  filter(!is.na(value))
 
 saveRDS(mm23_quarter, here("data", "tidy", "mm23_quarter.rds"))  
 
@@ -51,6 +53,7 @@ mm23_year <- read_csv(here("data", "raw", "mm23.csv"), skip = 1) %>%
   mutate(CDID = as.numeric(CDID)) %>% 
   rename(date = CDID) %>% 
   pivot_longer(cols = 2:ncol(.), names_to = "cdid") %>% 
-  mutate(value = as.numeric(value))
+  mutate(value = as.numeric(value)) %>% 
+  filter(!is.na(value))
 
 saveRDS(mm23_year, here("data", "tidy", "mm23_year.rds"))  
