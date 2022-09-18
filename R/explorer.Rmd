@@ -255,10 +255,12 @@ rpi <- setNames(rpi$cdid, rpi$title)
 renderText(paste("Latest date:", latest_date))
 br()
 
+
 selectInput(inputId = "rpi_series_si", 
             label = "Choose series:",
             choices = rpi, 
             multiple = TRUE)
+
 
 dateInput("rpi_startdate_di", label = "Start date:", value = "2020-01-01" )
 
@@ -504,3 +506,22 @@ renderPlot({
 
 ```
 
+# Reference tables
+
+## column {.tabset}
+
+### RPI
+```{r}
+
+renderDataTable(rpi_cdids)
+
+```
+
+### CPIH
+```{r}
+
+
+
+renderDataTable(read_rds(here("data", "tidy", "cpih_ann_rate_cdids.rds")))
+
+```

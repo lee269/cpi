@@ -1,0 +1,406 @@
+---
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	fig.height = 5,
+	fig.width = 10,
+	warning = FALSE,
+	message = FALSE
+)
+library(here)
+library(tidyverse)
+library(tidyr)
+library(lubridate)
+library(ggplot2)
+library(janitor)
+library(scales)
+library(purrr)
+
+# functions --------------------------------------------------------------------
+source(here("R", "functions.R"))
+# source(here("R", "theme_fsr.R"))
+# source(here("R", "palette_fsr.R"))
+
+# data files--------------------------------------------------------------------
+metadata <- read_rds(here("data", "tidy", "metadata.rds"))
+mm23_month <- read_rds(here("data", "tidy", "mm23_month.rds"))
+
+# setup vars--------------------------------------------------------------------
+release_date <- dmy(max(metadata$release_date))
+next_release_date <- dmy(max(metadata$next_release))
+
+# current data date
+latest_date <- max(mm23_month$date)
+latest_month <- month(latest_date, label = TRUE, abbr = FALSE)
+latest_year <- year(latest_date)
+
+# same date last year and month
+last_year <- latest_date %m-% years(1)
+last_month <- latest_date %m-% months(1)
+
+# chart styling-----------------------------------------------------------------
+
+# x axis limit for filters
+chart_x_date <- "2020-01-01"
+
+chart_text_size <- theme(axis.title.y=element_text(size=14),
+                         axis.text.x = element_text(size=14),
+                         axis.text.y = element_text(size=14),
+                         legend.text=element_text(size=14),
+                         plot.title = element_text(size = 18),
+                         plot.subtitle = element_text(size = 14),
+                         plot.caption = element_text(size = 9, face = "plain"))
+
+# functions-(could end up in a separate file)-----------------------------------
+
+
+```
+
+## `r latest_month` `r latest_year` Food price inflation
+
+#### Data published `r day(release_date)` `r month(release_date, label = TRUE, abbr = FALSE)` `r year(release_date)`
+
+### Aim
+
+The aim of this briefing is to provide a quick overview of the latest inflation figures published by ONS so that Defra staff can have a quick, top-level read out of the key changes soon after the figures are released. It is designed to complement and not replace the existing FCAT "CPI early briefs." It is not designed to be a detailed and insightful analysis of food inflation and it's drivers.
+
+### Key points
+
+-   insert commentary
+-   insert commentary
+-   insert commentary
+-   insert commentary
+
+### Quick-response analysis
+
+```{r qr_bullets, results='asis'}
+
+cpih_all_yy <- "L55O"
+cpih_food_yy <- "L55P"
+
+
+# cpi food bullet
+cat(paste0(
+  "1. **Year on year food inflation^[By which, we refer to the ONS “food and non -alcoholic beverage” price index.] was ",
+  get_val(mm23_month, cpih_food_yy, latest_date),
+  "% in ",
+  latest_month,
+  " ",
+  latest_year,
+  ", ",
+  eval_change(  get_val(mm23_month, cpih_food_yy, latest_date),   get_val(mm23_month, cpih_food_yy, last_month)),
+  " from ",
+  get_val(mm23_month, cpih_food_yy, last_month),
+  "% in the previous month**\n"
+))
+
+# cpi all bullet
+cat(paste0(
+  "2. **Overall year on year inflation was ",
+  get_val(mm23_month, cpih_all_yy, latest_date),
+  "% in ",
+  latest_month,
+  " ",
+  latest_year,
+  ", ",
+  eval_change(  get_val(mm23_month, cpih_all_yy, latest_date),   get_val(mm23_month, cpih_all_yy, last_month)),
+  " from ",
+  get_val(mm23_month, cpih_all_yy, last_month),
+  "% in the previous month**"
+))
+
+
+```
+
+```{r yoyseries}
+
+# cdids <- c("L55P", "L55O")
+cdids <- c(cpih_all_yy, cpih_food_yy)
+
+
+cht <- line_chart(cdids, labels = c("Overall inflation", "Food inflation"))
+cht +
+  labs(title = "General and Food inflation",
+       subtitle = "year on year inflation",
+       caption = paste("All items series", cpih_all_yy, "food series", cpih_food_yy))
+
+data <- mm23_month %>% 
+        filter(cdid %in% cdids & value != is.na(value) & date >= chart_x_date)
+
+ggplot(data) +
+  geom_line(aes(x = date, y = value, colour = cdid), size = 1) +
+  # xlim(ymd("2020-01-01"), NA) +
+  scale_colour_discrete(breaks = cdids, labels = c("Overall inflation", "Food inflation")) +
+  scale_y_continuous(labels = label_percent(scale = 1),breaks = breaks_extended(10)) +
+  scale_x_date(date_labels = "%b %Y") +
+  labs(title = "General and Food inflation",
+       subtitle = "year on year inflation",
+       caption = paste("All items series", cpih_all_yy, "food series", cpih_food_yy)) 
+  # theme_fsr()  
+  
+
+```
+
+```{r momdata, results='asis'}
+
+cpih_all_mm <- "L59C"
+cpih_food_mm <- "L59D"
+
+
+cat(paste0(
+  "3. Monthly food inflation^[Refers to changes in the price index for food/overall CPIH on a month-on-month basis. These numbers are normally more volatile than year-on-year inflation figures ask they focus on variations within a short timeframe.]",
+  " stood at ",
+  get_val(mm23_month, cpih_food_mm, latest_date),
+  "% in ",
+  latest_month,
+  " ",
+  latest_year,
+  ", compared to ",  
+    get_val(mm23_month, cpih_food_mm, last_month),
+  "% in ",
+  month(last_month, label = TRUE, abbr = FALSE),
+  " ",
+  year(last_month),
+  " and ",
+  get_val(mm23_month, cpih_food_mm, latest_date %m-% months(2)),
+  "% in ",
+  month(latest_date %m-% months(2), label = TRUE, abbr = FALSE),
+  " ",
+  year(latest_date %m-% months(2)),
+  "\n"
+))
+
+
+cat(paste0(
+  "4. Overall inflation",
+  " stood at ",
+  get_val(mm23_month, cpih_all_mm, latest_date),
+  "% in ",
+  latest_month,
+  " ",
+  latest_year,
+  ", compared to ",  
+    get_val(mm23_month, cpih_all_mm, last_month),
+  "% in ",
+  month(last_month, label = TRUE, abbr = FALSE),
+  " ",
+  year(last_month),
+  " and ",
+  get_val(mm23_month, cpih_all_mm, latest_date %m-% months(2)),
+  "% in ",
+  month(latest_date %m-% months(2), label = TRUE, abbr = FALSE),
+  " ",
+  year(latest_date %m-% months(2)),
+  "\n"
+))
+
+```
+
+```{r momchart}
+
+# cdids <- c("L59C", "L59D")
+cdids <- c(cpih_all_mm, cpih_food_mm)
+
+data <- mm23_month %>% 
+  filter(cdid %in% cdids & value != is.na(value) & date >= chart_x_date)
+
+ggplot(data) +
+  geom_bar(aes(x = date, y = value, fill = cdid),
+           stat = "identity",
+           position = position_dodge(preserve = "single")) +
+  # xlim(ymd("2021-01-01"), NA) +
+  scale_fill_discrete(breaks = cdids, labels = c("All items", "Food")) +
+  scale_x_date(date_labels = "%b %Y") +
+  scale_y_continuous(labels = label_percent(scale = 1, accuracy = 0.1), breaks = breaks_extended(5)) +
+    labs(title = "General and Food inflation",
+       subtitle = "Monthly inflation",
+       caption = paste("All items series", cpih_all_mm, "food series", cpih_food_mm)) +
+  theme_minimal() +
+  chart_text_size +
+  theme(legend.title = element_blank(),
+        legend.position = "bottom",
+        axis.title = element_blank(),
+        panel.grid.minor = element_blank()) 
+
+
+```
+
+```{r foodcats, results='asis'}
+
+
+tidy1 <- "CPIH MO?N?THLY RATE 01.1.[0-9] ?:? ?"
+tidy2 <- " 2015=100"
+
+cdids <- c("L59S","L59T","L59U","L59V","L59W","L59X","L59Y","L59Z","L5A2")
+
+labels <- c("Bread and\n cereals",
+  "Meat",
+  "Fish",
+  "Milk, cheese\n and eggs",
+  "Oils\n and fats",
+  "Fruit",
+  "Vegetables\n including\n potatoes and\n tubers",
+  "Sugar, jam,\n syrups,\n chocolate\n and\n confectionery",
+  "Food\n products (nec)")
+
+data <- mm23_month %>% 
+  filter(cdid %in% cdids & value != is.na(value) & date == max(date)) %>% 
+  select(cdid, value) %>% 
+  # arrange(-value) %>% 
+  slice_max(order_by = value, n = 3)
+
+cat(paste0(
+  "5. The biggest monthly changes within food categories were for ",
+  tidy_series_name(get_series_metadata(metadata, data$cdid[1])$title, tidy1, tidy2),
+  " (",
+  data$value[1],
+  "%), ",
+    tidy_series_name(get_series_metadata(metadata, data$cdid[2])$title, tidy1, tidy2),
+  " (",
+  data$value[2],
+  "%) and ",
+    tidy_series_name(get_series_metadata(metadata, data$cdid[3])$title, tidy1, tidy2),
+  " (",
+  data$value[3],
+  "%). "
+))
+
+data <- mm23_month %>% 
+  filter(cdid %in% cdids & value != is.na(value) & date == max(date)) %>% 
+  select(cdid, value) %>% 
+  # arrange(-value) %>% 
+  slice_min(order_by = value, n = 3)
+
+cat(paste0(
+  ". The biggest falls were ",
+  tidy_series_name(get_series_metadata(metadata, data$cdid[1])$title, tidy1, tidy2),
+  " (",
+  data$value[1],
+  "%), ",
+    tidy_series_name(get_series_metadata(metadata, data$cdid[2])$title, tidy1, tidy2),
+  " (",
+  data$value[2],
+  "%) and ",
+    tidy_series_name(get_series_metadata(metadata, data$cdid[3])$title, tidy1, tidy2),
+  " (",
+  data$value[3],
+  "%). "
+))
+
+
+
+```
+
+```{r foodcats-chart}
+
+cdids <- c("D7KR","D7KS","D7KT","D7KU","D7KV","D7KW","D7KX","D7KY","D7KZ")
+
+labels <- c("Bread and\n cereals",
+  "Meat",
+  "Fish",
+  "Milk, cheese\n and eggs",
+  "Oils\n and fats",
+  "Fruit",
+  "Vegetables\n including\n potatoes and\n tubers",
+  "Sugar, jam,\n syrups,\n chocolate\n and\n confectionery",
+  "Food\n products (nec)")
+
+data <- mm23_month %>% 
+  filter(cdid %in% cdids & value != is.na(value) & date == max(date)) %>% 
+  select(cdid, value)
+
+ggplot(data) +
+  geom_bar(aes(x = cdid, y = value),stat = "identity",  position = "dodge", fill = "red") +
+  scale_x_discrete(breaks = cdids, labels = labels) +
+  scale_y_continuous(labels = label_percent(scale = 1)) +
+  labs(title = "Food price category changes",
+       subtitle = "Jan 2022 compared to Dec 2021",
+       caption = paste("series ids ", paste(cdids, collapse = " "))) +
+  theme_minimal() +
+  chart_text_size +
+  theme(axis.title = element_blank(),
+        panel.grid.minor = element_blank())
+
+
+# paste(purrr::map2_chr(labels, cdids, paste), collapse = " ")
+
+```
+
+```{r contribution}
+
+
+cdids <- c("L5HB","L5HA","L5HF","L5HE","L5HD","L5HC","L5HG","L5H6","L5H5","L5H9","L5H8","L5H7")
+
+x <- map_df(cdids, get_series_metadata, df = metadata) %>% 
+  mutate(title = tidy_series_name(title,start = "CPIH: Contribution to all items annual rate: ", end = "#")) %>% 
+  select(cdid, title)
+
+data <- mm23_month %>% 
+  filter(cdid %in% cdids & value != is.na(value) & date %in% c(latest_date, last_month, latest_date %m-% months(2))) %>% 
+  select(date, cdid, value) %>% 
+  left_join(x)
+
+ggplot(data) +
+  geom_bar(aes(x = str_wrap(title,width = 8), y = value, fill = as.factor(format(date, "%B %y"))),
+           stat = "identity",
+           position = position_dodge2(preserve = "single", reverse = TRUE)) +
+  scale_y_continuous(labels = label_percent(scale = 1)) +
+  scale_fill_viridis_d() +
+  labs(title = "Contribution",
+       subtitle = "sub",
+       caption = paste("series ids ", paste(cdids, collapse = " "))) +
+  theme_minimal() + 
+  chart_text_size +
+  theme(axis.title = element_blank(),
+        legend.title = element_blank(),
+        axis.text.x = element_text(size = 10))
+
+```
+
+## Average retail prices of selected items
+
+```{r average-rps}
+
+cdids <- c('CZNT','CZOH','CZNW','VKYY','CZMY','CZNN')
+
+# item
+x <- purrr::map(cdids, get_series_metadata, df = metadata) 
+col1 <- x %>% purrr::map(list("title")) %>% unlist
+
+
+# latest prices
+rp_compare <- function(seriesid, date1, date2){
+  
+text <- paste0(
+  "£",
+  get_val(mm23_month, seriesid, date1)/100,
+  ", ",
+  eval_change(get_val(mm23_month, seriesid, date1)/100, get_val(mm23_month, seriesid, date2)/100),
+  " from £",
+  get_val(mm23_month, seriesid, date2)/100,
+  " in ",
+  month(date2, label = TRUE, abbr = FALSE),
+  " ",
+  year(date2)
+)
+
+return(text)
+
+}
+
+col2 <- purrr::pmap(list( cdids, rep(latest_date, length(cdids)), rep(last_month, length(cdids)) ) , rp_compare) %>% unlist
+
+
+# last year
+col3 <- purrr::map2(cdids, last_year, get_val, df = mm23_month) %>% unlist %>% dollar(scale = 0.01, prefix = "£")
+
+
+
+knitr::kable(data.frame(cdids, col1, col2, col3))
+
+```
+
+#### Next release: `r day(next_release_date)` `r month(next_release_date, label = TRUE, abbr = FALSE)` `r year(next_release_date)`
