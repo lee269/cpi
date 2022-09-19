@@ -1,5 +1,7 @@
 ---
 output: html_document
+params:
+  chart_x_date: "2010-01-01"
 ---
 
 ```{r setup, include=FALSE}
@@ -44,7 +46,7 @@ last_month <- latest_date %m-% months(1)
 # chart styling-----------------------------------------------------------------
 
 # x axis limit for filters
-chart_x_date <- "2020-01-01"
+chart_x_date <- params$chart_x_date
 
 chart_text_size <- theme(axis.title.y=element_text(size=14),
                          axis.text.x = element_text(size=14),
@@ -59,20 +61,53 @@ chart_text_size <- theme(axis.title.y=element_text(size=14),
 
 ```
 
-## `r latest_month` `r latest_year` Food price inflation
+## Food price inflation summary: `r strftime(latest_date, "%B %Y")`
 
-#### Data published `r day(release_date)` `r month(release_date, label = TRUE, abbr = FALSE)` `r year(release_date)`
+#### ONS Data published at 0700 on `r strftime(release_date, "%d %B %Y")`.
 
-### Aim
+##### Next data release: `r strftime(next_release_date, "%d %B %Y")`
 
-The aim of this briefing is to provide a quick overview of the latest inflation figures published by ONS so that Defra staff can have a quick, top-level read out of the key changes soon after the figures are released. It is designed to complement and not replace the existing FCAT "CPI early briefs." It is not designed to be a detailed and insightful analysis of food inflation and it's drivers.
+### Annual inflation rate
 
-### Key points
+```{r latest-headlines, results='asis'}
 
--   insert commentary
--   insert commentary
--   insert commentary
--   insert commentary
+# Food is L55P
+x <- get_val_month(mm23_month, "L55P", latest_date)
+cat(paste0(
+ " - **Food price inflation** in ", strftime(x$date, "%B %Y"), " was ", x$val, "%. This was ", eval_change(x$val, x$prev_mth_val), " from ", x$prev_mth_val, "% in ",
+ strftime(x$prev_mth_date, "%B %Y"), ". "
+)
+)
+
+x <- get_prev_high(mm23_month, cdid = "L55P", series_date = latest_date)
+cat(paste0(
+ "\n - The last time inflation was at this level was in ",  strftime(x$prev_high_mth, "%B %Y"),
+ " when the inflation rate was ", x$prev_high_val, "%."
+)
+)
+
+# All items is L55O
+x <- get_val_month(mm23_month, "L55O", latest_date)
+cat(paste0(
+ "\n - **Overall inflation** in ", strftime(x$date, "%B %Y"), " was ", x$val, "%. This was ", eval_change(x$val, x$prev_mth_val), " from ", x$prev_mth_val, "% in ",
+ strftime(x$prev_mth_date, "%B %Y"), ". "
+)
+)
+
+x <- get_prev_high(mm23_month, cdid = "L55O", series_date = latest_date)
+cat(paste0(
+ "\n - The last time inflation was at this level was in ",  strftime(x$prev_high_mth, "%B %Y"),
+ " when the inflation rate was ", x$prev_high_val, "%."
+)
+)
+
+
+```
+
+> -   insert commentary
+> -   insert commentary
+> -   insert commentary
+> -   insert commentary
 
 ### Quick-response analysis
 
@@ -313,7 +348,7 @@ data <- mm23_month %>%
   select(cdid, value)
 
 ggplot(data) +
-  geom_bar(aes(x = cdid, y = value),stat = "identity",  position = "dodge", fill = "red") +
+  geom_bar(aes(x = fct_reorder(cdid, -value), y = value),stat = "identity",  position = "dodge", fill = "red") +
   scale_x_discrete(breaks = cdids, labels = labels) +
   scale_y_continuous(labels = label_percent(scale = 1)) +
   labs(title = "Food price category changes",
