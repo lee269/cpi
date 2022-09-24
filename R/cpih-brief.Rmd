@@ -61,11 +61,11 @@ chart_text_size <- theme(axis.title.y=element_text(size=14),
 
 ```
 
-## Food price inflation summary: `r strftime(latest_date, "%B %Y")`
+## Food price inflation^[By which, we refer to the ONS 'food and non -alcoholic beverage' price index.] summary: `r format(latest_date, "%B %Y")`
 
-#### ONS Data published at 0700 on `r strftime(release_date, "%d %B %Y")`.
+#### ONS Data published at 0700 on `r format(release_date, "%d %B %Y")`.
 
-##### Next data release: `r strftime(next_release_date, "%d %B %Y")`
+##### Next data release: `r format(next_release_date, "%d %B %Y")`
 
 ### Annual inflation rate
 
@@ -74,14 +74,14 @@ chart_text_size <- theme(axis.title.y=element_text(size=14),
 # Food is L55P
 x <- get_val_month(mm23_month, "L55P", latest_date)
 cat(paste0(
- " - **Food price inflation** in ", strftime(x$date, "%B %Y"), " was ", x$val, "%. This was ", eval_change(x$val, x$prev_mth_val), " from ", x$prev_mth_val, "% in ",
- strftime(x$prev_mth_date, "%B %Y"), ". "
+ " - **Food price inflation** in ", format(x$date, "%B %Y"), " was ", x$val, "%. This was ", eval_change(x$val, x$prev_mth_val), " from ", x$prev_mth_val, "% in ",
+ format(x$prev_mth_date, "%B %Y"), ". "
 )
 )
 
 x <- get_prev_high(mm23_month, cdid = "L55P", series_date = latest_date)
 cat(paste0(
- "\n - The last time inflation was at this level was in ",  strftime(x$prev_high_mth, "%B %Y"),
+ "\n - The last time inflation was at this level was in ",  format(x$prev_high_mth, "%B %Y"),
  " when the inflation rate was ", x$prev_high_val, "%."
 )
 )
@@ -89,14 +89,14 @@ cat(paste0(
 # All items is L55O
 x <- get_val_month(mm23_month, "L55O", latest_date)
 cat(paste0(
- "\n - **Overall inflation** in ", strftime(x$date, "%B %Y"), " was ", x$val, "%. This was ", eval_change(x$val, x$prev_mth_val), " from ", x$prev_mth_val, "% in ",
- strftime(x$prev_mth_date, "%B %Y"), ". "
+ "\n - **Overall inflation** in ", format(x$date, "%B %Y"), " was ", x$val, "%. This was ", eval_change(x$val, x$prev_mth_val), " from ", x$prev_mth_val, "% in ",
+ format(x$prev_mth_date, "%B %Y"), ". "
 )
 )
 
 x <- get_prev_high(mm23_month, cdid = "L55O", series_date = latest_date)
 cat(paste0(
- "\n - The last time inflation was at this level was in ",  strftime(x$prev_high_mth, "%B %Y"),
+ "\n - The last time inflation was at this level was in ",  format(x$prev_high_mth, "%B %Y"),
  " when the inflation rate was ", x$prev_high_val, "%."
 )
 )
@@ -104,133 +104,59 @@ cat(paste0(
 
 ```
 
-> -   insert commentary
-> -   insert commentary
-> -   insert commentary
-> -   insert commentary
+> -   insert ONS commentary here
+> -   insert ONS commentary here
+> -   insert ONS commentary here
+> -   insert ONS commentary here
 
-### Quick-response analysis
-
-```{r qr_bullets, results='asis'}
-
-cpih_all_yy <- "L55O"
-cpih_food_yy <- "L55P"
-
-
-# cpi food bullet
-cat(paste0(
-  "1. **Year on year food inflation^[By which, we refer to the ONS “food and non -alcoholic beverage” price index.] was ",
-  get_val(mm23_month, cpih_food_yy, latest_date),
-  "% in ",
-  latest_month,
-  " ",
-  latest_year,
-  ", ",
-  eval_change(  get_val(mm23_month, cpih_food_yy, latest_date),   get_val(mm23_month, cpih_food_yy, last_month)),
-  " from ",
-  get_val(mm23_month, cpih_food_yy, last_month),
-  "% in the previous month**\n"
-))
-
-# cpi all bullet
-cat(paste0(
-  "2. **Overall year on year inflation was ",
-  get_val(mm23_month, cpih_all_yy, latest_date),
-  "% in ",
-  latest_month,
-  " ",
-  latest_year,
-  ", ",
-  eval_change(  get_val(mm23_month, cpih_all_yy, latest_date),   get_val(mm23_month, cpih_all_yy, last_month)),
-  " from ",
-  get_val(mm23_month, cpih_all_yy, last_month),
-  "% in the previous month**"
-))
-
-
-```
 
 ```{r yoyseries}
-
-# cdids <- c("L55P", "L55O")
-cdids <- c(cpih_all_yy, cpih_food_yy)
-
-
-cht <- line_chart(cdids, labels = c("Overall inflation", "Food inflation"))
-cht +
-  labs(title = "General and Food inflation",
-       subtitle = "year on year inflation",
-       caption = paste("All items series", cpih_all_yy, "food series", cpih_food_yy))
+# All items series: L55O, food series: L55P
+cdids <- c("L55O", "L55P")
 
 data <- mm23_month %>% 
         filter(cdid %in% cdids & value != is.na(value) & date >= chart_x_date)
 
 ggplot(data) +
   geom_line(aes(x = date, y = value, colour = cdid), size = 1) +
-  # xlim(ymd("2020-01-01"), NA) +
   scale_colour_discrete(breaks = cdids, labels = c("Overall inflation", "Food inflation")) +
   scale_y_continuous(labels = label_percent(scale = 1),breaks = breaks_extended(10)) +
-  scale_x_date(date_labels = "%b %Y") +
+  scale_x_date(date_labels = "%b %Y", limits = c(ymd("2020-01-01"), NA)) +
   labs(title = "General and Food inflation",
        subtitle = "year on year inflation",
-       caption = paste("All items series", cpih_all_yy, "food series", cpih_food_yy)) 
+       caption = "All items series: L55O, food series: L55P") +
+  theme_minimal() +
+  theme(axis.title = element_blank())
   # theme_fsr()  
   
 
 ```
 
-```{r momdata, results='asis'}
+### Monthly inflation^[Refers to changes in the price index for food/overall CPIH on a month-on-month basis. These numbers are normally more volatile than year-on-year inflation figures ask they focus on variations within a short timeframe.]
 
+```{r momdata, results='asis'}
+# Monthly all items L59C, food L59D
 cpih_all_mm <- "L59C"
 cpih_food_mm <- "L59D"
 
-
+x <- get_val_month(df = mm23_month, cdid = "L59D", series_date = latest_date)
 cat(paste0(
-  "3. Monthly food inflation^[Refers to changes in the price index for food/overall CPIH on a month-on-month basis. These numbers are normally more volatile than year-on-year inflation figures ask they focus on variations within a short timeframe.]",
-  " stood at ",
-  get_val(mm23_month, cpih_food_mm, latest_date),
-  "% in ",
-  latest_month,
-  " ",
-  latest_year,
-  ", compared to ",  
-    get_val(mm23_month, cpih_food_mm, last_month),
-  "% in ",
-  month(last_month, label = TRUE, abbr = FALSE),
-  " ",
-  year(last_month),
-  " and ",
-  get_val(mm23_month, cpih_food_mm, latest_date %m-% months(2)),
-  "% in ",
-  month(latest_date %m-% months(2), label = TRUE, abbr = FALSE),
-  " ",
-  year(latest_date %m-% months(2)),
-  "\n"
+  " - Month on month food inflation was ", x$val,
+  "% in ", format(x$date, "%B %Y"),
+  " compared to ", x$prev_mth_val,
+  "% in ", format(x$prev_mth_date, "%B %Y"),
+  ".\n"
 ))
 
-
+x <- get_val_month(df = mm23_month, cdid = "L59C", series_date = latest_date)
 cat(paste0(
-  "4. Overall inflation",
-  " stood at ",
-  get_val(mm23_month, cpih_all_mm, latest_date),
-  "% in ",
-  latest_month,
-  " ",
-  latest_year,
-  ", compared to ",  
-    get_val(mm23_month, cpih_all_mm, last_month),
-  "% in ",
-  month(last_month, label = TRUE, abbr = FALSE),
-  " ",
-  year(last_month),
-  " and ",
-  get_val(mm23_month, cpih_all_mm, latest_date %m-% months(2)),
-  "% in ",
-  month(latest_date %m-% months(2), label = TRUE, abbr = FALSE),
-  " ",
-  year(latest_date %m-% months(2)),
-  "\n"
+  " - Month on month overall inflation was ", x$val,
+  "% in ", format(x$date, "%B %Y"),
+  " compared to ", x$prev_mth_val,
+  "% in ", format(x$prev_mth_date, "%B %Y"),
+  ".\n"
 ))
+
 
 ```
 
@@ -370,16 +296,16 @@ ggplot(data) +
 cdids <- c("L5HB","L5HA","L5HF","L5HE","L5HD","L5HC","L5HG","L5H6","L5H5","L5H9","L5H8","L5H7")
 
 x <- map_df(cdids, get_series_metadata, df = metadata) %>% 
-  mutate(title = tidy_series_name(title,start = "CPIH: Contribution to all items annual rate: ", end = "#")) %>% 
+  mutate(title = str_to_title(tidy_series_name(title,start = "CPIH: Contribution to all items annual rate: ", end = "#"))) %>% 
   select(cdid, title)
 
 data <- mm23_month %>% 
-  filter(cdid %in% cdids & value != is.na(value) & date %in% c(latest_date, last_month, latest_date %m-% months(2))) %>% 
+  filter(cdid %in% cdids & value != is.na(value) & date >= latest_date) %>% 
   select(date, cdid, value) %>% 
   left_join(x)
 
 ggplot(data) +
-  geom_bar(aes(x = str_wrap(title,width = 8), y = value, fill = as.factor(format(date, "%B %y"))),
+  geom_bar(aes(x = fct_reorder(str_wrap(title,width = 8), -value), y = value, fill = as.factor(format(date, "%B %y"))),
            stat = "identity",
            position = position_dodge2(preserve = "single", reverse = TRUE)) +
   scale_y_continuous(labels = label_percent(scale = 1)) +
@@ -391,7 +317,8 @@ ggplot(data) +
   chart_text_size +
   theme(axis.title = element_blank(),
         legend.title = element_blank(),
-        axis.text.x = element_text(size = 10))
+        axis.text.x = element_text(size = 10),
+        panel.grid.major.x = element_blank()) 
 
 ```
 
