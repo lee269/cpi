@@ -30,6 +30,7 @@ source(here("R", "functions.R"))
 # data files--------------------------------------------------------------------
 metadata <- read_rds(here("data", "tidy", "metadata.rds"))
 mm23_month <- read_rds(here("data", "tidy", "mm23_month.rds"))
+oecd <- readRDS(here("data", "tidy", "oecd.rds"))
 
 # setup vars--------------------------------------------------------------------
 release_date <- dmy(max(metadata$release_date))
@@ -79,7 +80,9 @@ cont_ann <- mm23_month %>%
 
 ```
 
-## Food price inflation^[By which, we refer to the ONS 'food and non -alcoholic beverage' price index.] summary: `r format(latest_date, "%B %Y")`
+## Food price inflation[^1] summary: `r format(latest_date, "%B %Y")`
+
+[^1]: By which, we refer to the ONS 'food and non -alcoholic beverage' price index.
 
 #### ONS Data published at 0700 on `r format(release_date, "%d %B %Y")`.
 
@@ -132,8 +135,9 @@ cat(paste0(" - Food made the ", cont_ann[cont_ann$cdid == "L5H5",]$rank_text,
 
 ```
 
+### Monthly inflation[^2]
 
-### Monthly inflation^[Refers to changes in the price index for food/overall CPIH on a month-on-month basis. These numbers are normally more volatile than year-on-year inflation figures ask they focus on variations within a short timeframe.]
+[^2]: Refers to changes in the price index for food/overall CPIH on a month-on-month basis. These numbers are normally more volatile than year-on-year inflation figures ask they focus on variations within a short timeframe.
 
 ```{r momdata, results='asis'}
 # Monthly all items L59C, food L59D
@@ -160,6 +164,7 @@ cat(paste0(
 
 
 ```
+
 ```{r foodcats, results='asis'}
 
 
@@ -242,7 +247,7 @@ ggplot(data) +
   geom_line(aes(x = date, y = value, colour = cdid), size = 1) +
   scale_colour_discrete(breaks = cdids, labels = c("Overall inflation", "Food inflation")) +
   scale_y_continuous(labels = label_percent(scale = 1),breaks = breaks_extended(10)) +
-  scale_x_date(date_labels = "%b %Y", limits = c(ymd("2020-01-01"), NA)) +
+  scale_x_date(date_labels = "%b %Y", limits = c(ymd(chart_x_date), NA)) +
   labs(title = "General and Food inflation",
        subtitle = "year on year inflation",
        caption = "All items series: L55O, food series: L55P") +
@@ -252,7 +257,6 @@ ggplot(data) +
   
 
 ```
-
 
 ```{r foodcats-chart}
 
@@ -288,8 +292,6 @@ ggplot(data) +
 # paste(purrr::map2_chr(labels, cdids, paste), collapse = " ")
 
 ```
-
-
 
 ## Average retail prices of selected items
 
@@ -334,8 +336,83 @@ knitr::kable(data.frame(cdids, col1, col2, col3))
 
 ```
 
-#### Next release: `r day(next_release_date)` `r month(next_release_date, label = TRUE, abbr = FALSE)` `r year(next_release_date)`
+### International comparisons
 
+```{r oecd, results='asis'}
+
+countries <- c("GBR", "EU27_2020", "G-7", "FRA", "DEU", "ESP", "USA", "JPN")
+cat("#### Food price inflation rates in selected countries/regions:\n\n")
+
+int <- oecd %>% 
+  filter(subject == "FOOD" &
+         # date == now &
+         country_code %in% countries) %>% 
+        group_by(country_code) %>% 
+        slice_max(date) %>% 
+        ungroup() %>% 
+        mutate(country_name = fct_relevel(country_name, "United Kingdom"),
+               value = paste0(sprintf("%1.1f", value),"%"),
+               date = format(date, "%B %Y")) %>% 
+        select(country_name, value, date) %>% 
+        arrange(country_name)
+
+knitr::kable(int)
+
+oecd %>% 
+  filter(subject == "FOOD" &
+         # date == now &
+         country_code %in% countries) %>% 
+        group_by(country_code) %>% 
+        slice_max(date) %>% 
+        ungroup() %>% 
+        mutate(isuk =  ifelse(country_code == "GBR", "Y", "N")) %>% 
+        select(country_name, value, date, isuk) %>%
+  ggplot() +
+  geom_bar(aes(x = fct_reorder(country_name, -value), y = value, fill = isuk), stat = "identity") +
+  scale_fill_manual(values = c("Y" = "darkred", "N" = "darkorange"), guide = "none") +
+  labs(title = "Food price inflation") +
+  theme_minimal() +
+  theme(axis.title = element_blank(),
+        panel.grid.major.x = element_blank())
+
+cat("\n\n#### Overall inflation rates in selected countries/regions:\n\n")
+
+int <- oecd %>% 
+  filter(subject == "TOT" &
+         # date == now &
+         country_code %in% countries) %>% 
+        group_by(country_code) %>% 
+        slice_max(date) %>% 
+        ungroup() %>% 
+        mutate(country_name = fct_relevel(country_name, "United Kingdom"),
+               value = paste0(sprintf("%1.1f", value),"%"),
+               date = format(date, "%B %Y")) %>% 
+        select(country_name, value, date) %>% 
+        arrange(country_name)
+
+knitr::kable(int)
+
+oecd %>% 
+  filter(subject == "TOT" &
+         # date == now &
+         country_code %in% countries) %>% 
+        group_by(country_code) %>% 
+        slice_max(date) %>% 
+        ungroup() %>% 
+        mutate(isuk =  ifelse(country_code == "GBR", "Y", "N")) %>% 
+        select(country_name, value, date, isuk) %>%
+  ggplot() +
+  geom_bar(aes(x = fct_reorder(country_name, -value), y = value, fill = isuk), stat = "identity") +
+  scale_fill_manual(values = c("Y" = "darkred", "N" = "darkorange"), guide = "none") +
+  labs(title = "Overall inflation") +
+  theme_minimal() +
+  theme(axis.title = element_blank(),
+        panel.grid.major.x = element_blank())
+
+
+```
+
+#### Next release: `r day(next_release_date)` `r month(next_release_date, label = TRUE, abbr = FALSE)` `r year(next_release_date)`
 
 ```{r annex, results='asis'}
 if(params$include_annex == TRUE){
@@ -395,5 +472,3 @@ ggplot(data) +
 
 
 ```
-
-
