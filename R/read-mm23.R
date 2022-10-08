@@ -1,59 +1,64 @@
-library(here)
-library(tidyverse)
-library(tidyr)
-library(lubridate)
-library(ggplot2)
-library(janitor)
-
-# https://www.ons.gov.uk/file?uri=/economy/inflationandpriceindices/datasets/consumerpriceindices/current/mm23.csv
-# read_csv("https://www.ons.gov.uk/file?uri=/economy/inflationandpriceindices/datasets/consumerpriceindices/current/mm23.csv")
-# Not sure why this code seems to pull in a different version of mm23 than manually downloading.
-# x <- read.csv("https://www.ons.gov.uk/file?uri=/economy/inflationandpriceindices/datasets/consumerpriceindices/current/mm23.csv")
-# write_csv(x, here("data", "raw", "mm23.csv"))
-
-download.file("https://www.ons.gov.uk/file?uri=/economy/inflationandpriceindices/datasets/consumerpriceindices/current/mm23.csv", here("data", "raw","mm23.csv"))
-
-metadata <- read_csv(here("data", "raw", "mm23.csv"), n_max = 6) %>% 
-            t() %>% 
-            as_tibble(rownames = "series") %>% 
-            setNames( .[1,]) %>% 
-            # rename(series = Title) %>%
-            filter(Title != "Title") %>% 
-            clean_names() %>% 
-            relocate(cdid)
+read_mm23 <- function(rawfile, path){
+  require(dplyr)
+  require(tibble)
+  require(janitor)
+  require(tidyr)
+  require(readr)
+  require(lubridate)
   
-            # pivot_longer(cols = 2:ncol(.), names_to = "series")
-
-saveRDS(metadata, here("data", "tidy", "metadata.rds"))
-
-
-mm23_month <- read_csv(here("data", "raw", "mm23.csv"), skip = 1) %>% 
-        filter(nchar(CDID) == 8) %>% 
-        mutate(CDID = ym(CDID)) %>%
-        rename(date = CDID) %>% 
-        pivot_longer(cols = 2:ncol(.), names_to = "cdid") %>% 
-        mutate(value = as.numeric(value)) %>% 
-        filter(!is.na(value))
-
-saveRDS(mm23_month, here("data", "tidy", "mm23_month.rds"))  
-
-
-mm23_quarter <- read_csv(here("data", "raw", "mm23.csv"), skip = 1) %>% 
-  filter(nchar(CDID) == 7 & CDID != "PreUnit") %>% 
-  mutate(CDID = yq(CDID)) %>% 
-  rename(date = CDID) %>% 
-  pivot_longer(cols = 2:ncol(.), names_to = "cdid") %>% 
-  mutate(value = as.numeric(value)) %>% 
-  filter(!is.na(value))
-
-saveRDS(mm23_quarter, here("data", "tidy", "mm23_quarter.rds"))  
-
-mm23_year <- read_csv(here("data", "raw", "mm23.csv"), skip = 1) %>% 
-  filter(nchar(CDID) == 4 & CDID != "Unit") %>% 
-  mutate(CDID = as.numeric(CDID)) %>% 
-  rename(date = CDID) %>% 
-  pivot_longer(cols = 2:ncol(.), names_to = "cdid") %>% 
-  mutate(value = as.numeric(value)) %>% 
-  filter(!is.na(value))
-
-saveRDS(mm23_year, here("data", "tidy", "mm23_year.rds"))  
+  if(missing(rawfile)){
+    url <- "https://www.ons.gov.uk/file?uri=/economy/inflationandpriceindices/datasets/consumerpriceindices/current/mm23.csv"
+    tmp <- tempfile()
+    download.file(url, tmp)
+    rawfile <- tmp
+  }
+  
+  metadata <- readr::read_csv(rawfile, n_max = 6, show_col_types = FALSE,) %>% 
+    t() %>% 
+    tibble::as_tibble(rownames = "series", .name_repair = "unique") %>% 
+    setNames( .[1,]) %>% 
+    # rename(series = Title) %>%
+    dplyr::filter(Title != "Title") %>% 
+    janitor::clean_names() %>% 
+    dplyr::relocate(cdid)
+  
+  message(paste0("Saving ",path, "/metadata.rds"))
+  saveRDS(metadata, paste0(path, "/metadata.rds"))
+  
+  mm23_month <- readr::read_csv(rawfile, skip = 1, show_col_types = FALSE) %>% 
+    dplyr::filter(nchar(CDID) == 8) %>% 
+    dplyr::mutate(CDID = lubridate::ym(CDID)) %>%
+    dplyr::rename(date = CDID) %>% 
+    tidyr::pivot_longer(cols = 2:ncol(.), names_to = "cdid") %>% 
+    dplyr::mutate(value = as.numeric(value)) %>% 
+    dplyr::filter(!is.na(value))
+  
+  
+  message(paste0("Saving ", path, "/mm23_month.rds"))
+  saveRDS(mm23_month, paste0(path, "/mm23_month.rds"))  
+  
+  
+  mm23_quarter <- readr::read_csv(rawfile, skip = 1, show_col_types = FALSE) %>% 
+    dplyr::filter(nchar(CDID) == 7 & CDID != "PreUnit") %>% 
+    dplyr::mutate(CDID = lubridate::yq(CDID)) %>% 
+    dplyr::rename(date = CDID) %>% 
+    tidyr::pivot_longer(cols = 2:ncol(.), names_to = "cdid") %>% 
+    dplyr::mutate(value = as.numeric(value)) %>% 
+    dplyr::filter(!is.na(value))
+  
+  message(paste0("Saving ", path, "/mm23_quarter.rds"))
+  saveRDS(mm23_quarter, paste0(path, "/mm23_quarter.rds"))  
+  
+  mm23_year <- readr::read_csv(rawfile, skip = 1, show_col_types = FALSE) %>% 
+    dplyr::filter(nchar(CDID) == 4 & CDID != "Unit") %>% 
+    dplyr::mutate(CDID = as.numeric(CDID)) %>% 
+    dplyr::rename(date = CDID) %>% 
+    tidyr::pivot_longer(cols = 2:ncol(.), names_to = "cdid") %>% 
+    dplyr::mutate(value = as.numeric(value)) %>% 
+    dplyr::filter(!is.na(value))
+  
+  message(paste0("Saving ", path, "/mm23_year.rds"))
+  saveRDS(mm23_year, paste0(path, "/mm23_year.rds"))  
+  
+  
+}
