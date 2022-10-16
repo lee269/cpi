@@ -1,7 +1,7 @@
 ---
 output: html_document
 params:
-  chart_x_date: "2010-01-01"
+  chart_x_date: "2020-01-01"
   include_annex: TRUE
 ---
 
@@ -70,7 +70,7 @@ x <- map_df(cdids, get_series_metadata, df = metadata) %>%
 cont_ann <- mm23_month %>% 
   filter(cdid %in% cdids & value != is.na(value) & date >= latest_date) %>% 
   mutate(rank = rank(-value),
-         rank_text = ordinal(rank(-value))) %>% 
+         rank_text = scales::ordinal(rank(-value))) %>% 
   select(date, cdid, value, rank, rank_text) %>% 
   arrange(rank) %>% 
   left_join(x)
@@ -96,14 +96,14 @@ cont_ann <- mm23_month %>%
 x <- get_val_month(mm23_month, "L55P", latest_date)
 cat(paste0(
  " - **Food price inflation** in ", format(x$date, "%B %Y"), " was ", x$val, "%. This was ", eval_change(x$val, x$prev_mth_val), " from ", x$prev_mth_val, "% in ",
- format(x$prev_mth_date, "%B %Y"), ". "
+ format(x$prev_mth_date, "%B %Y"), ".\n"
 )
 )
 
 x <- get_prev_high(mm23_month, cdid = "L55P", series_date = latest_date)
 cat(paste0(
  "\n - The last time inflation was at this level was in ",  format(x$prev_high_mth, "%B %Y"),
- " when the inflation rate was ", x$prev_high_val, "%."
+ " when the inflation rate was ", x$prev_high_val, "%.\n"
 )
 )
 
@@ -111,20 +111,20 @@ cat(paste0(
 x <- get_val_month(mm23_month, "L55O", latest_date)
 cat(paste0(
  "\n - **Overall inflation** in ", format(x$date, "%B %Y"), " was ", x$val, "%. This was ", eval_change(x$val, x$prev_mth_val), " from ", x$prev_mth_val, "% in ",
- format(x$prev_mth_date, "%B %Y"), ". "
+ format(x$prev_mth_date, "%B %Y"), ".\n"
 )
 )
 
 x <- get_prev_high(mm23_month, cdid = "L55O", series_date = latest_date)
 cat(paste0(
  "\n - The last time inflation was at this level was in ",  format(x$prev_high_mth, "%B %Y"),
- " when the inflation rate was ", x$prev_high_val, "%. \n"
+ " when the inflation rate was ", x$prev_high_val, "%.\n"
 )
 )
 
 
 # Contribution bullet point
-cat(paste0(" - Food made the ", cont_ann[cont_ann$cdid == "L5H5",]$rank_text,
+cat(paste0("\n - Food made the ", cont_ann[cont_ann$cdid == "L5H5",]$rank_text,
            " largest contribution to the change in rate.",
            "The two highest contribtutions were from ",
            cont_ann[cont_ann$rank == 1,]$title, " and ",
@@ -340,7 +340,7 @@ knitr::kable(data.frame(cdids, col1, col2, col3))
 
 ```{r oecd, results='asis'}
 
-countries <- c("GBR", "EU27_2020", "G-7", "FRA", "DEU", "ESP", "USA", "JPN")
+countries <- c("GBR", "EU27_2020", "G-7", "FRA", "DEU", "USA", "JPN", "ITA", "CAN")
 cat("#### Food price inflation rates in selected countries/regions:\n\n")
 
 int <- oecd %>% 
