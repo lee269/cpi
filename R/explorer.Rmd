@@ -97,7 +97,7 @@ rpi_chart <- function(cdids, start_date = "2020-01-01", labels){
 # CPIH inputs ------------------------------------------------------------------
 
 # show latest date info
-renderText(paste("Latest date:", latest_date))
+renderText(paste("Latest data:", month(latest_date, label = TRUE, abbr = FALSE), year(latest_date)))
 br()
 
 # picker for month or annual. Other inputs need to react to this

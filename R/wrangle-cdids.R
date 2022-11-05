@@ -17,9 +17,9 @@ cpih_ann2 <- metadata %>%
   mutate(title = str_remove(title, "CPIH ANNUAL RATE ")) %>% 
   mutate(level = 2)
 
-cpih_ann3 <- metadata %>% 
-  filter(str_detect(title, "CPIH ANNUAL RATE [0-9][0-9]\\.[0-9].[0-9] ?:")) %>% 
-  mutate(title = str_remove(title, "CPIH ANNUAL RATE ")) %>% 
+cpih_ann3 <- metadata %>%
+  filter(str_detect(title, "CPIH ANN[A-Z]* RATE [0-9][0-9]\\.[0-9].[0-9] ?:")) %>% 
+  mutate(title = str_remove(title, "CPIH ANN[A-Z]* RATE ")) %>% 
   mutate(level = 3)
 
 
@@ -30,7 +30,7 @@ cpih_ann4 <- metadata %>%
 
 
 cpih_ann <- bind_rows(list(cpih_ann1, cpih_ann2, cpih_ann3, cpih_ann4)) %>% 
-            mutate(title = str_remove(title, " 2015=100")) %>% 
+            mutate(title = str_to_title(str_remove(title, " 2015=100"))) %>% 
             arrange(title)
 
 saveRDS(cpih_ann, here("data", "tidy", "cpih_ann_rate_cdids.rds"))
@@ -61,7 +61,7 @@ cpih_mth4 <- metadata %>%
 
 
 cpih_mth <- bind_rows(list(cpih_mth1, cpih_mth2, cpih_mth3, cpih_mth4)) %>% 
-            mutate(title = str_remove(title, " 2015=100")) %>% 
+            mutate(title = str_to_title(str_remove(title, " 2015=100"))) %>% 
             arrange(title)
 
 saveRDS(cpih_mth, here("data", "tidy", "cpih_mth_rate_cdids.rds"))
@@ -81,6 +81,7 @@ rpi <- metadata %>%
   mutate(title = str_remove(title, "RPI: Average [Pp]rice - ")) %>%
   mutate(title = str_remove(title, "RPI Average [Pp]rice- ")) %>%
   mutate(title = str_remove(title, "RPI Average [Pp]rice - ")) %>%
+  mutate(title = str_to_title(title)) %>% 
   arrange(title)
 
 saveRDS(rpi, here("data", "tidy", "rpi_avg_price_cdids.rds"))
