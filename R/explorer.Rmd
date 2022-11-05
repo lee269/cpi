@@ -97,7 +97,7 @@ rpi_chart <- function(cdids, start_date = "2020-01-01", labels){
 # CPIH inputs ------------------------------------------------------------------
 
 # show latest date info
-renderText(paste("Latest data:", month(latest_date, label = TRUE, abbr = FALSE), year(latest_date)))
+renderText(paste("Latest data:", format(latest_date, "%B %Y")))
 br()
 
 # picker for month or annual. Other inputs need to react to this
@@ -252,7 +252,7 @@ rpi <- setNames(rpi$cdid, rpi$title)
   
 # RPI Inputs -------------------------------------------------------------------
 
-renderText(paste("Latest date:", latest_date))
+renderText(paste("Latest data:", format(latest_date, "%B %Y")))
 br()
 
 
@@ -469,23 +469,140 @@ renderTable(rpi_price_table())
 
 # Contribution to rate
 
-## Column
+## Contribution Inputs {.sidebar data-width=350}
+```{r}
+
+renderText(paste("Latest data:", format(latest_date, "%B %Y")))
+br()
+
+# series select box
+cont <- cpih_cont_ann %>% 
+          mutate(title = str_remove(title, "CPIH: Contribution to all items annual rate: ")) %>% 
+          select(cdid, title)
+
+cont <- setNames(cont$cdid, cont$title)
+
+selectInput(inputId = "cont_series_si", 
+            label = "Choose series:",
+            choices = cont, 
+            multiple = TRUE)
+
+
+dateInput("cont_startdate_di", label = "Start date:", value = "2020-01-01" )
+
+checkboxInput("cont_facet_cb", label = "Facet chart")
+cont_facet <- reactive(input$cont_facet_cb)
+
+
+cont_data <- reactive({
+  
+data <- cpih_cont_ann %>% 
+    left_join(mm23_month) %>% 
+    filter(date >= input$cont_startdate_di) %>% 
+    select(date, cdid, title, value) %>% 
+    group_by(date) %>% 
+    mutate(rank = rank(-value),
+           rank_text = scales::ordinal(rank(-value)),
+           title = str_remove(title, "CPIH: Contribution to all items annual rate: ")
+                  ) %>% 
+    arrange(rank)
+  
+  
+})
+
+
+# cont data download
+uiOutput("cont_downloadui")
+
+output$cont_downloadui <- renderUI ({
+downloadButton(outputId = "cont_download", label = "Download data")
+})
+
+
+  # download handler
+  output$cont_download <- downloadHandler(
+    filename = function() {
+      paste("data-", format(Sys.time(), "%Y-%m-%d-%H%M%S"), ".csv", sep="")
+    },
+    content = function(file) {
+      x <-   cont_data() %>% 
+    filter(cdid %in% input$cont_series_si)
+      write.csv(x, file)
+    }
+  )
+
+
+
+
+```
+
+## Column {data-width="350" .tabset}
 
 ### Contribution to all items annual rate
 ```{r}
 
 renderPlot({
-  cpih_cont_ann %>% 
-  left_join(mm23_month) %>% 
-  mutate(title = str_remove(title, "CPIH: Contribution to all items annual rate: ")) %>% 
-  ggplot() +
-  geom_bar(aes(x = date, y = value, fill = title), stat = "identity", position = position_stack()) +
-  labs(title = "CPIH: Contribution to all items annual rate")
+  cht <-   cont_data() %>% 
+            filter(cdid %in% input$cont_series_si) %>% 
+            ggplot() +
+            geom_bar(aes(x = date, y = value, fill = title),
+                     stat = "identity",
+                     position = position_stack()) +
+            labs(title = "CPIH: Contribution to all items annual rate") +
+            chart_theme
+  
+  if(cont_facet() == FALSE){
+    cht
+  } else {
+    cht +
+      facet_wrap(~title, labeller = label_wrap_gen(width = 25)) +
+      theme(legend.position = "none")
+  }
+         
   
 })
 
 
 ```
+### Contribution table
+```{r}
+renderDataTable({
+  # cpih_cont_ann %>% 
+  #   left_join(mm23_month) %>% 
+  #   select(date, cdid, title, value) %>% 
+  #   # filter(date >= latest_date) %>% 
+  #   group_by(date) %>% 
+  #   mutate(rank = rank(-value),
+  #          rank_text = scales::ordinal(rank(-value))) %>% 
+  # arrange(rank)
+  
+  cont_data() %>% 
+    filter(cdid %in% input$cont_series_si)
+  
+})
+
+
+```
+
+### Contribution rank
+```{r}
+renderPlot({
+  # cpih_cont_ann %>% 
+  #   left_join(mm23_month) %>% 
+  #   select(date, cdid, title, value) %>% 
+  #   group_by(date) %>% 
+  #   mutate(rank = rank(-value)) %>% 
+  #   arrange(rank) %>% 
+  cont_data() %>% 
+    filter(cdid %in% input$cont_series_si) %>%
+    ggplot() +
+    geom_line(aes(x = date, y = rank, colour = title)) +
+    geom_point(aes(x = date, y = rank, colour = title), size = 3) +
+    scale_y_reverse(limits = c(12,1), n.breaks = 12)
+})
+
+```
+
 
 ### C
 ```{r}
@@ -508,7 +625,7 @@ renderPlot({
 
 # Reference tables
 
-## column {.tabset}
+## Column {.tabset}
 
 ### RPI
 ```{r}
