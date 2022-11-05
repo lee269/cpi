@@ -85,10 +85,16 @@ rpi_chart <- function(cdids, start_date = "2020-01-01", labels){
     theme(text = element_text(size = 20))
 }
 
+# DT table options--------------------------------------------------------------
+options(DT.options = list(lengthMenu = list(c(5, 10, 50, -1),
+                                            c("5", "10", "50", "All"))
+                          )
+        )
 
 ```
 
-# CPIH
+CPIH inflation {data-navmenu="Consumer price inflation" data-icon="fa-chart-line"}
+================================================================================
 
 ## CPIH Inputs {.sidebar data-width=350}
 
@@ -233,12 +239,13 @@ renderPlot({
 
 ```{r cpih-table}
 
-renderDataTable(cpih_data())
+renderDT(cpih_data(), extensions = "Scroller")
 
 ```
 
 
-# RPI Average prices
+RPI Average prices {data-navmenu="Consumer price inflation" data-icon="fa-coins"}
+================================================================================
 
 ## RPI Inputs {.sidebar data-width=350}
 
@@ -467,7 +474,8 @@ renderTable(rpi_price_table())
 
 
 
-# Contribution to rate
+Contribution to annual rate {data-navmenu="Consumer price inflation" data-icon="fa-chart-pie"}
+================================================================================
 
 ## Contribution Inputs {.sidebar data-width=350}
 ```{r}
@@ -623,7 +631,8 @@ renderPlot({
 
 ```
 
-# Reference tables
+Reference tables {data-navmenu="Consumer price inflation" data-icon="fa-table"}
+================================================================================
 
 ## Column {.tabset}
 
