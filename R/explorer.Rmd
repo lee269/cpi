@@ -606,7 +606,8 @@ renderPlot({
     ggplot() +
     geom_line(aes(x = date, y = rank, colour = title)) +
     geom_point(aes(x = date, y = rank, colour = title), size = 3) +
-    scale_y_reverse(limits = c(12,1), n.breaks = 12)
+    scale_y_reverse(limits = c(12,1), n.breaks = 12) +
+    chart_theme
 })
 
 ```

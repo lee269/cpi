@@ -33,7 +33,8 @@ process_mm23 <- function(rawfile, path){
     dplyr::mutate(CDID = lubridate::ym(CDID)) %>%
     dplyr::rename(date = CDID) %>% 
     tidyr::pivot_longer(cols = 2:ncol(.), names_to = "cdid") %>% 
-    dplyr::mutate(value = as.numeric(value)) %>% 
+    dplyr::mutate(value = as.numeric(value),
+                  period = "M") %>% 
     dplyr::filter(!is.na(value))
   
   
@@ -44,7 +45,8 @@ process_mm23 <- function(rawfile, path){
     dplyr::mutate(CDID = lubridate::yq(CDID)) %>% 
     dplyr::rename(date = CDID) %>% 
     tidyr::pivot_longer(cols = 2:ncol(.), names_to = "cdid") %>% 
-    dplyr::mutate(value = as.numeric(value)) %>% 
+    dplyr::mutate(value = as.numeric(value),
+                  period = "Q") %>% 
     dplyr::filter(!is.na(value))
   
   
@@ -52,12 +54,15 @@ process_mm23 <- function(rawfile, path){
   
   mm23_year <- readr::read_csv(rawfile, skip = 1, show_col_types = FALSE) %>% 
     dplyr::filter(nchar(CDID) == 4 & CDID != "Unit") %>% 
-    dplyr::mutate(CDID = as.numeric(CDID)) %>% 
+    dplyr::mutate(CDID = lubridate::ymd(paste(CDID, "-01-01"))) %>% 
     dplyr::rename(date = CDID) %>% 
     tidyr::pivot_longer(cols = 2:ncol(.), names_to = "cdid") %>% 
-    dplyr::mutate(value = as.numeric(value)) %>% 
+    dplyr::mutate(value = as.numeric(value),
+                  period = "Y") %>% 
     dplyr::filter(!is.na(value))
   
+  data <- dplyr::bind_rows(mm23_month, mm23_quarter, mm23_year) %>%
+    dplyr::arrange(cdid, date)
   
   
   # CPIH annual rates ------------------------------------------------------------
@@ -172,9 +177,10 @@ process_mm23 <- function(rawfile, path){
     arrange(title)
   
   mm23 <- list(metadata = metadata,
-               month = mm23_month,
-               quarter = mm23_quarter,
-               year = mm23_year,
+               # month = mm23_month,
+               # quarter = mm23_quarter,
+               # year = mm23_year,
+               data = data,
                cpih_ann_rate_cdids = cpih_ann_rate_cdids,
                cpih_mth_rate_cdids = cpih_mth_rate_cdids,
                cpih_cont_ann_cdids = cpih_cont_ann_cdids,
