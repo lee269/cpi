@@ -177,9 +177,6 @@ process_mm23 <- function(rawfile, path){
     arrange(title)
   
   mm23 <- list(metadata = metadata,
-               # month = mm23_month,
-               # quarter = mm23_quarter,
-               # year = mm23_year,
                data = data,
                cpih_ann_rate_cdids = cpih_ann_rate_cdids,
                cpih_mth_rate_cdids = cpih_mth_rate_cdids,
