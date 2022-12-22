@@ -11,7 +11,7 @@ To do
 - expand the mm23$data to add friendly series categories: 'annual rate' etc
 - modules!
 
-Goal: mm23 is a list containing metadata, data with friendly series desriptions,
+Goal: mm23 is a list containing metadata, data with friendly series descriptions,
 and values for latest data and updates
 
 Maybe additional metadata stuff?

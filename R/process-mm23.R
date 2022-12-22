@@ -25,6 +25,8 @@ process_mm23 <- function(rawfile, path){
     janitor::clean_names() %>% 
     dplyr::relocate(cdid)
 
+  release_date <- dmy(metadata$release_date[1])
+  next_release <- dmy(metadata$next_release[1])
     
   message("Processing month")
 
@@ -94,6 +96,8 @@ process_mm23 <- function(rawfile, path){
   
   cpih_ann_rate_cdids <- bind_rows(list(cpih_ann1, cpih_ann2, cpih_ann3, cpih_ann4)) %>% 
     mutate(title = str_to_title(str_remove(title, " 2015=100"))) %>% 
+    mutate(category = "CPIH Annual rate (%)") %>% 
+    select(cdid, title, category, level) %>% 
     arrange(title)
   
   
@@ -126,6 +130,8 @@ process_mm23 <- function(rawfile, path){
   
   cpih_mth_rate_cdids <- bind_rows(list(cpih_mth1, cpih_mth2, cpih_mth3, cpih_mth4)) %>% 
     mutate(title = str_to_title(str_remove(title, " 2015=100"))) %>% 
+    mutate(category = "CPIH Monthly rate (%)") %>% 
+    select(cdid, title, category, level) %>% 
     arrange(title)
   
   
@@ -145,7 +151,9 @@ process_mm23 <- function(rawfile, path){
     mutate(title = str_remove(title, "RPI: Average [Pp]rice - ")) %>%
     mutate(title = str_remove(title, "RPI Average [Pp]rice- ")) %>%
     mutate(title = str_remove(title, "RPI Average [Pp]rice - ")) %>%
-    mutate(title = str_to_title(title)) %>% 
+    mutate(title = str_to_title(title)) %>%
+    mutate(category = "RPI Average price (pence)") %>% 
+    select(cdid, title, category) %>% 
     arrange(title)
   
   
@@ -156,6 +164,9 @@ process_mm23 <- function(rawfile, path){
   
   cpih_cont_ann_cdids <- metadata %>% 
     filter(str_detect(title, "CPIH: Contribution to all items annual rate: ")) %>% 
+    mutate(title = str_remove(title, "CPIH: Contribution to all items annual rate: ")) %>% 
+    mutate(category = "CPIH contribution to all items annual rate") %>% 
+    select(cdid, title, category) %>% 
     arrange(title)
   
   
@@ -165,6 +176,9 @@ process_mm23 <- function(rawfile, path){
   
   cpih_cont_mth_chg_cdids <- metadata %>% 
     filter(str_detect(title, "CPIH: Contribution to monthly change in all items index: ")) %>% 
+    mutate(title = str_remove(title, "CPIH: Contribution to monthly change in all items index: ")) %>% 
+    mutate(category = "CPIH contribution to monthly change in all items index") %>% 
+    select(cdid, title, category) %>% 
     arrange(title)
   
   
@@ -174,16 +188,44 @@ process_mm23 <- function(rawfile, path){
   
   cpih_cont_ann_chg_cdids <- metadata %>% 
     filter(str_detect(title, "CPIH: % points change over previous month \\(12 month rate\\): ")) %>% 
+    mutate(title = str_remove(title, "CPIH: % points change over previous month \\(12 month rate\\): ")) %>% 
+    mutate(category = "CPIH % points change over previous months 12 month rate") %>% 
+    select(cdid, title, category) %>% 
     arrange(title)
   
-  mm23 <- list(metadata = metadata,
+  
+  # rebuild metadata
+  
+  series <- bind_rows(list(cpih_ann_rate_cdids, 
+                         cpih_mth_rate_cdids, 
+                         cpih_cont_ann_cdids, 
+                         cpih_cont_ann_chg_cdids, 
+                         cpih_cont_mth_chg_cdids,
+                         rpi_avg_price_cdids))
+  
+  metadata <- metadata %>%
+    left_join(series, by = "cdid") %>% 
+    mutate(t2 = ifelse(is.na(title.y), title.x, title.y)) %>% 
+    rename(title_original = title.x,
+           title = t2) %>% 
+    select(cdid, title, category, level, pre_unit, unit, release_date, next_release, important_notes)
+  
+  
+  
+  
+  
+  mm23 <- list(
+               release_date = release_date,
+               next_release = next_release,
+               metadata = metadata,
                data = data,
                cpih_ann_rate_cdids = cpih_ann_rate_cdids,
                cpih_mth_rate_cdids = cpih_mth_rate_cdids,
                cpih_cont_ann_cdids = cpih_cont_ann_cdids,
                cpih_cont_ann_chg_cdids = cpih_cont_ann_chg_cdids,
                cpih_cont_mth_chg_cdids = cpih_cont_mth_chg_cdids,
-               rpi_avg_price_cdids = rpi_avg_price_cdids)
+               rpi_avg_price_cdids = rpi_avg_price_cdids
+               )
   
   saveRDS(mm23, paste0(path, "/mm23.rds"))
   
