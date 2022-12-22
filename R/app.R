@@ -4,8 +4,11 @@ library(ggplot2)
 library(here)
 
 source(here("R", "cdid_chart.R"))
-mm23 <- readRDS(here("data", "tidy", "mm23.rds"))
-data <- mm23$data
+# mm23 <- readRDS(here("data", "tidy", "mm23.rds"))
+# data <- mm23$data
+
+data <- readRDS(here("data", "tidy", "appdata.rds"))
+
 
 ui <- navbarPage(title = "Inflation Explorer",
   tabPanel("CPIH Annual rate",

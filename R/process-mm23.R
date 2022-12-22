@@ -229,6 +229,11 @@ process_mm23 <- function(rawfile, path){
   
   saveRDS(mm23, paste0(path, "/mm23.rds"))
   
+  appseries <- metadata %>% filter(!is.na(category))
+  appdata <- data %>% 
+    filter(cdid %in% appseries$cdid) %>% 
+    left_join(appseries, by = "cdid")
+  saveRDS(appdata, paste0(path, "/appdata.rds"))
   
 }
 
