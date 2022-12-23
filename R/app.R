@@ -7,7 +7,14 @@ source(here("R", "cdid_chart.R"))
 # mm23 <- readRDS(here("data", "tidy", "mm23.rds"))
 # data <- mm23$data
 
-data <- readRDS(here("data", "tidy", "appdata.rds"))
+appdata <- readRDS(here("data", "tidy", "appdata.rds"))
+data <- appdata$data
+
+cpih_ann_rate_cdids <- data %>% 
+  filter(category == "CPIH Annual rate (%)") %>% 
+  select(cdid, title, level) %>%
+  unique() %>%
+  arrange(title, level)
 
 
 ui <- navbarPage(title = "Inflation Explorer",
@@ -35,8 +42,8 @@ ui <- navbarPage(title = "Inflation Explorer",
     column(4,
            selectInput("series",
                        "Choose series",
-                       choices = setNames(mm23$cpih_ann_rate_cdids$cdid,
-                                          mm23$cpih_ann_rate_cdids$title), 
+                       choices = setNames(cpih_ann_rate_cdids$cdid,
+                                          cpih_ann_rate_cdids$title), 
                        multiple = TRUE),
            "|Download button|"
     ),

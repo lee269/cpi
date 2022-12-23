@@ -213,7 +213,7 @@ process_mm23 <- function(rawfile, path){
   
   
   
-  
+   message("Writing mm23")
   mm23 <- list(
                release_date = release_date,
                next_release = next_release,
@@ -229,10 +229,21 @@ process_mm23 <- function(rawfile, path){
   
   saveRDS(mm23, paste0(path, "/mm23.rds"))
   
+  
+  message("Writing appdata"
+          )
   appseries <- metadata %>% filter(!is.na(category))
-  appdata <- data %>% 
+  app <- data %>% 
     filter(cdid %in% appseries$cdid) %>% 
-    left_join(appseries, by = "cdid")
+    left_join(appseries, by = "cdid") %>% 
+    select(-release_date, -next_release)
+  
+  appdata <- list(
+    release_date = release_date,
+    next_release = next_release,
+    data = app)
+  
+  
   saveRDS(appdata, paste0(path, "/appdata.rds"))
   
 }
