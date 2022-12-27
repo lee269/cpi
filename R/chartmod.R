@@ -1,17 +1,17 @@
 chartUI <- function(id, cdids) {
   fluidRow(
-  column(4,
-    selectInput(NS(id, "cdid"), label = "cdid", choices = cdids, multiple = TRUE),
-    downloadButton(NS(id, "downloaddata"), "Download")
-    ),
-  column(8,
+      column(4,
+         selectInput(NS(id, "cdid"), label = "Select series:", choices = cdids, multiple = TRUE),
+         downloadButton(NS(id, "downloaddata"), "Download")
+             ),
+      column(8,
          tabsetPanel(
-           tabPanel("Chart", plotOutput(NS(id, "chart"))),
-           tabPanel("Data", tableOutput(NS(id, "data")))
-         )
-    
-  )
-  )
+               tabPanel("Chart", plotOutput(NS(id, "chart"))),
+               tabPanel("Data", tableOutput(NS(id, "data")))
+                    )
+        
+             )
+           )
 }
 
 
@@ -27,18 +27,10 @@ chartServer <- function(id) {
     })
     
     output$chart <- renderPlot({
-      # x <- cdid_chart(appdata$data, 
-      #                 cdids = input$cdid, 
-      #                 freq = "M")
-      # x$chart
       data()$chart
     })
 
     output$data <- renderTable({
-      # x <- cdid_chart(appdata$data, 
-      #                 cdids = input$cdid, 
-      #                 freq = "M")
-      # x$data
       data()$data
     })
     
