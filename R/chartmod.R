@@ -1,10 +1,15 @@
-chartUI <- function(id) {
+chartUI <- function(id, cdids) {
   fluidRow(
   column(4,
-    selectInput(NS(id, "cdid"), label = "cdid", choices = c("L55P", "L55O"), multiple = TRUE)
+    selectInput(NS(id, "cdid"), label = "cdid", choices = cdids, multiple = TRUE),
+    downloadButton(NS(id, "downloaddata"), "Download")
     ),
   column(8,
-    plotOutput(NS(id, "chart"))
+         tabsetPanel(
+           tabPanel("Chart", plotOutput(NS(id, "chart"))),
+           tabPanel("Data", tableOutput(NS(id, "data")))
+         )
+    
   )
   )
 }
@@ -13,20 +18,49 @@ chartUI <- function(id) {
 
 chartServer <- function(id) {
   moduleServer(id, function(input, output, session){
-    output$chart <- renderPlot({
-      x <- cdid_chart(appdata$data, 
+    
+    data <- reactive({
+      cdid_chart(appdata$data, 
                       cdids = input$cdid, 
                       freq = "M")
-      x$chart
+      
     })
     
+    output$chart <- renderPlot({
+      # x <- cdid_chart(appdata$data, 
+      #                 cdids = input$cdid, 
+      #                 freq = "M")
+      # x$chart
+      data()$chart
+    })
+
+    output$data <- renderTable({
+      # x <- cdid_chart(appdata$data, 
+      #                 cdids = input$cdid, 
+      #                 freq = "M")
+      # x$data
+      data()$data
+    })
+    
+    output$downloaddata <- downloadHandler(
+      filename = function() {
+        paste("data-", format(Sys.time(), "%Y-%m-%d-%H%M%S"), ".csv", sep="")
+      },
+      content = function(file) {
+        write.csv(data()$data, file)
+      }
+    )
+        
   })
 }
 
 
 chartApp <- function() {
+  x <- sample_n(appdata$data,10)
+  cdids <- setNames(x$cdid, x$title)
+  
   ui <- fluidPage(
-    chartUI("chart1")
+    chartUI("chart1", cdids)
   )
   server <- function(input, output, session) {
     chartServer("chart1")
