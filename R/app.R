@@ -4,6 +4,7 @@ library(ggplot2)
 library(here)
 
 source(here("R", "cdid_chart.R"))
+source(here("R", "chartmod.R"))
 # mm23 <- readRDS(here("data", "tidy", "mm23.rds"))
 # data <- mm23$data
 
