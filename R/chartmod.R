@@ -15,14 +15,20 @@ chartUI <- function(id, cdids) {
 }
 
 
-
-chartServer <- function(id) {
+# parameters are period in the form M Q or Y
+# start date for charts
+# both reactive
+chartServer <- function(id, period, date) {
+  stopifnot(is.reactive(period))
+  stopifnot(is.reactive(date))
+  
   moduleServer(id, function(input, output, session){
     
     data <- reactive({
       cdid_chart(appdata$data, 
                       cdids = input$cdid, 
-                      freq = "M")
+                      freq = period(),
+                      start_date = date())
       
     })
     
@@ -52,10 +58,17 @@ chartApp <- function() {
   cdids <- setNames(x$cdid, x$title)
   
   ui <- fluidPage(
+    selectInput("time",
+                "Frequency:",
+                choices = list(Month =  "M", Quarter = "Q", Year =  "Y"),
+                selected = "M"),
+    dateInput(inputId = "startdate",
+              label = "Start date:",
+              value = "2020-01-01"),
     chartUI("chart1", cdids)
   )
   server <- function(input, output, session) {
-    chartServer("chart1")
+    chartServer("chart1", period = reactive(input$time), date = reactive(input$startdate))
   }
   
   shinyApp(ui, server)
