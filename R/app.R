@@ -30,6 +30,17 @@ mth_rate <- setNames(cpih_mth_rate_cdids$cdid,
                      cpih_mth_rate_cdids$title)
 
 
+rpi_price_cdids <- data %>% 
+  filter(category == "RPI Average price (pence)") %>% 
+  select(cdid, title, level) %>%
+  unique() %>%
+  arrange(title, level)
+
+rpi_price <- setNames(rpi_price_cdids$cdid,
+                     rpi_price_cdids$title)
+
+
+
 ui <- navbarPage(title = "Inflation Explorer",
                  theme = bslib::bs_theme(bootswatch = "minty"),
 # Global options on top row-----------------------------------------------------
@@ -61,14 +72,19 @@ ui <- navbarPage(title = "Inflation Explorer",
   ),
   tabPanel("CPIH Monthly rate",
     chartUI("mthrate", mth_rate)         
+  ),
+  tabPanel("RPI prices",
+           chartUI("rpiprice", rpi_price)
   )
+  
   )
 )
 
 server <- function(input, output, session) {
   thematic::thematic_shiny()
-  chartServer("annrate", period = reactive(input$period), date = reactive(input$startdate))
-  chartServer("mthrate", period = reactive("M"), date = reactive(input$startdate))
+  chartServer("annrate", rawdata = data, period = reactive(input$period), date = reactive(input$startdate))
+  chartServer("mthrate", rawdata = data, period = reactive("M"), date = reactive(input$startdate))
+  chartServer("rpiprice", rawdata = data, period = reactive(input$period), date = reactive(input$startdate))
 }
 
 shinyApp(ui, server)
