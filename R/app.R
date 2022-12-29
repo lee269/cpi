@@ -59,7 +59,9 @@ ui <- navbarPage(title = "Inflation Explorer",
                       value = "2020-01-01")
      ),
      column(2,
-            "|Facet box|"
+            checkboxInput(inputId = "facet",
+                          label = "Separate charts",
+                          value = FALSE)
      ),
      column(3,
             paste("Next data:", format(appdata$next_release, "%d %b %Y")))
@@ -82,9 +84,21 @@ ui <- navbarPage(title = "Inflation Explorer",
 
 server <- function(input, output, session) {
   thematic::thematic_shiny()
-  chartServer("annrate", rawdata = data, period = reactive(input$period), date = reactive(input$startdate))
-  chartServer("mthrate", rawdata = data, period = reactive("M"), date = reactive(input$startdate))
-  chartServer("rpiprice", rawdata = data, period = reactive(input$period), date = reactive(input$startdate))
+  chartServer("annrate",
+              rawdata = data, 
+              period = reactive(input$period),
+              date = reactive(input$startdate),
+              facet = reactive(input$facet))
+  chartServer("mthrate",
+              rawdata = data,
+              period = reactive("M"),
+              date = reactive(input$startdate),
+              facet = reactive(input$facet))
+  chartServer("rpiprice", 
+              rawdata = data, 
+              period = reactive(input$period),
+              date = reactive(input$startdate),
+              facet = reactive(input$facet))
 }
 
 shinyApp(ui, server)

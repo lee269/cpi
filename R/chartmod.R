@@ -19,10 +19,12 @@ chartUI <- function(id, cdids) {
 # start date for charts
 # both reactive
 # data is not reactive
-chartServer <- function(id, rawdata, period, date) {
+chartServer <- function(id, rawdata, period, date, facet) {
   stopifnot(!is.reactive(data))
   stopifnot(is.reactive(period))
   stopifnot(is.reactive(date))
+  stopifnot(is.reactive(facet))
+  
   
   moduleServer(id, function(input, output, session){
     
@@ -35,7 +37,13 @@ chartServer <- function(id, rawdata, period, date) {
     })
     
     output$chart <- renderPlot({
-      data()$chart
+      if(facet()) {
+        data()$chart +
+          facet_wrap(vars(title)) +
+          theme(legend.position = "none")
+      } else {
+        data()$chart
+      }
     })
 
     output$data <- renderTable({
