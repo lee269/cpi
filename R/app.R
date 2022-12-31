@@ -13,8 +13,6 @@ ann_rate <- cdid_list(data, "CPIH Annual rate (%)")
 mth_rate <- cdid_list(data, "CPIH Monthly rate (%)")
 rpi_price <- cdid_list(data, "RPI Average price (pence)")
 
-
-
 ui <- navbarPage(title = "Inflation Explorer",
                  theme = bslib::bs_theme(bootswatch = "minty"),
 # Global options on top row-----------------------------------------------------
@@ -42,17 +40,17 @@ ui <- navbarPage(title = "Inflation Explorer",
    ),
 
 # Pages---------------------------------------------------------------------
-  navbarMenu(title = "CPIH",
   tabPanel("CPIH Annual rate",
     chartUI("annrate", ann_rate)
   ),
-  tabPanel("CPIH Monthly rate",
-    chartUI("mthrate", mth_rate)         
-  ),
   tabPanel("RPI prices",
            chartUI("rpiprice", rpi_price)
-  )
-  
+  ),
+  navbarMenu(title = "Other",
+             tabPanel("Stuff"),
+             tabPanel("CPIH Monthly rate",
+                chartUI("mthrate", mth_rate)         
+             )
   )
 )
 

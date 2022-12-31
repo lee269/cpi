@@ -39,6 +39,7 @@ process_mm23 <- function(rawfile, path){
                   period = "M") %>% 
     dplyr::filter(!is.na(value))
   
+  latest_data <- max(mm23_month$date)
   
   message("Processing quarter")
   
@@ -239,6 +240,7 @@ process_mm23 <- function(rawfile, path){
     select(-release_date, -next_release)
   
   appdata <- list(
+    latest_data = latest_data,
     release_date = release_date,
     next_release = next_release,
     data = app)

@@ -53,7 +53,7 @@ cdid_chart <- function(data, cdids, freq = "M", start_date = "2020-01-01", label
     dplyr::filter(period == freq)
   
   unit <- data %>% slice(1) %>% pull(unit)
-  
+  if(is.na(unit)) {unit = "%"}
   
   chart <- data %>% 
     ggplot2::ggplot() +
@@ -62,13 +62,13 @@ cdid_chart <- function(data, cdids, freq = "M", start_date = "2020-01-01", label
     ggplot2::scale_x_date(date_labels = "%b %Y") +
     chart_theme
 
-  if(unit == "%") {
+  if(unit == "Pence") {
+    chart <- chart +
+      ggplot2::scale_y_continuous(labels = scales::label_comma())
+  } else {
     chart <- chart +
       ggplot2::scale_y_continuous(labels = scales::label_percent(scale = 1, accuracy = 0.1),
                                   breaks = scales::breaks_extended(10))
-  } else {
-    chart <- chart +
-      ggplot2::scale_y_continuous(labels = scales::label_comma())
   }
   
     
