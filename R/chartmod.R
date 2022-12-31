@@ -55,7 +55,7 @@ chartServer <- function(id, rawdata, period, date, facet) {
         paste("data-", format(Sys.time(), "%Y-%m-%d-%H%M%S"), ".csv", sep="")
       },
       content = function(file) {
-        write.csv(data()$data, file)
+        write.csv(data()$data, file, row.names = FALSE)
       }
     )
         

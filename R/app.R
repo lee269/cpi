@@ -3,41 +3,15 @@ library(dplyr)
 library(ggplot2)
 library(here)
 
-source(here("R", "cdid_chart.R"))
 source(here("R", "chartmod.R"))
-# mm23 <- readRDS(here("data", "tidy", "mm23.rds"))
-# data <- mm23$data
+source(here("R", "helpers.R"))
 
 appdata <- readRDS(here("data", "tidy", "appdata.rds"))
 data <- appdata$data
 
-cpih_ann_rate_cdids <- data %>% 
-  filter(category == "CPIH Annual rate (%)") %>% 
-  select(cdid, title, level) %>%
-  unique() %>%
-  arrange(title, level) 
-
-ann_rate <- setNames(cpih_ann_rate_cdids$cdid,
-                     cpih_ann_rate_cdids$title)
-
-cpih_mth_rate_cdids <- data %>% 
-  filter(category == "CPIH Monthly rate (%)") %>% 
-  select(cdid, title, level) %>%
-  unique() %>%
-  arrange(title, level)
-  
-mth_rate <- setNames(cpih_mth_rate_cdids$cdid,
-                     cpih_mth_rate_cdids$title)
-
-
-rpi_price_cdids <- data %>% 
-  filter(category == "RPI Average price (pence)") %>% 
-  select(cdid, title, level) %>%
-  unique() %>%
-  arrange(title, level)
-
-rpi_price <- setNames(rpi_price_cdids$cdid,
-                     rpi_price_cdids$title)
+ann_rate <- cdid_list(data, "CPIH Annual rate (%)")
+mth_rate <- cdid_list(data, "CPIH Monthly rate (%)")
+rpi_price <- cdid_list(data, "RPI Average price (pence)")
 
 
 
