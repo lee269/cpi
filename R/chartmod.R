@@ -39,7 +39,8 @@ chartServer <- function(id, rawdata, period, date, facet) {
     output$chart <- renderPlot({
       if(facet()) {
         data()$chart +
-          facet_wrap(vars(title)) +
+          facet_wrap(vars(title),
+                     labeller = label_wrap_gen(width = 25)) +
           theme(legend.position = "none")
       } else {
         data()$chart

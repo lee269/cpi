@@ -1,6 +1,11 @@
 # chart theme
 chart_theme <- 
-  theme_minimal()
+  theme_minimal() +
+  theme(axis.title = element_blank(),
+        axis.text = element_text(size = rel(1.1)),
+        legend.title = element_blank(),
+        legend.text = element_text(size = rel(1.1)),
+        strip.text = element_text(size = rel(1.1)))
 
 
 
@@ -47,15 +52,35 @@ cdid_chart <- function(data, cdids, freq = "M", start_date = "2020-01-01", label
     dplyr::filter(cdid %in% cdids & value != is.na(value) & date >= start_date) %>% 
     dplyr::filter(period == freq)
   
+  unit <- data %>% slice(1) %>% pull(unit)
+  
+  
   chart <- data %>% 
     ggplot2::ggplot() +
     ggplot2::geom_line(aes(x = date, y = value, colour = title), size = 1) +
     # ggplot2::scale_color_discrete(breaks = cdids, labels = labels) +
-    ggplot2::scale_y_continuous(labels = scales::label_percent(scale = 1, accuracy = 0.1),
-                                breaks = scales::breaks_extended(10)) +
     ggplot2::scale_x_date(date_labels = "%b %Y") +
     chart_theme
+
+  if(unit == "%") {
+    chart <- chart +
+      ggplot2::scale_y_continuous(labels = scales::label_percent(scale = 1, accuracy = 0.1),
+                                  breaks = scales::breaks_extended(10))
+  } else {
+    chart <- chart +
+      ggplot2::scale_y_continuous(labels = scales::label_comma())
+  }
   
+    
   out <- list(chart = chart, data = data)
   return(out)
+}
+
+
+plot_labeller <- function(l, varname) {
+  if (varname == "Pence") {
+    scales::label_comma(l)
+  } else {
+    scales::label_percent(l, scale = 1, accuracy = 0.1)
+  }
 }
