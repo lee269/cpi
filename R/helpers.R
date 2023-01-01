@@ -84,3 +84,24 @@ plot_labeller <- function(l, varname) {
     scales::label_percent(l, scale = 1, accuracy = 0.1)
   }
 }
+
+
+pct_line_chart <- function(data, facet = FALSE){
+
+  chart <- data %>% 
+    ggplot2::ggplot() +
+    ggplot2::geom_line(aes(x = date, y = value, colour = title), size = 1) +
+    ggplot2::scale_x_date(date_labels = "%b %Y") +
+    chart_theme
+
+  if(facet) {
+    chart <- chart +
+      facet_wrap(vars(title),
+                 labeller = label_wrap_gen(width = 25)) +
+      theme(legend.position = "none")
+  } else {
+    chart
+  }
+  
+  return(chart)
+}

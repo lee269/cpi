@@ -82,18 +82,9 @@ server <- function(input, output, session) {
   cont_rate_data <- datasetServer("cont_rate_sel", data)
   
   output$cont_rate_cht <- renderPlot({
-    # chart function including facet param
-   x <-  ggplot(cont_rate_data()) +
-      geom_line(aes(x = date, y = value, colour = title)) +
-     ggplot2::scale_x_date(date_labels = "%b %Y") +
-     chart_theme
-   
-   if(input$facet) {
-     x + facet_wrap(vars(title))
-   } else {
-     x
-   }
+   pct_line_chart(cont_rate_data(), facet = input$facet) 
                })
+  
 }
 
 shinyApp(ui, server)
