@@ -4,6 +4,7 @@ library(ggplot2)
 library(here)
 
 source(here("R", "chartmod.R"))
+source(here("R", "mod_dataset.R"))
 source(here("R", "helpers.R"))
 
 appdata <- readRDS(here("data", "tidy", "appdata.rds"))
@@ -12,6 +13,7 @@ data <- appdata$data
 ann_rate <- cdid_list(data, "CPIH Annual rate (%)")
 mth_rate <- cdid_list(data, "CPIH Monthly rate (%)")
 rpi_price <- cdid_list(data, "RPI Average price (pence)")
+cont_rate_cdids <- cdid_list(data, "CPIH contribution to all items annual rate")
 
 ui <- navbarPage(title = "Inflation Explorer",
                  theme = bslib::bs_theme(bootswatch = "minty"),
@@ -35,7 +37,7 @@ ui <- navbarPage(title = "Inflation Explorer",
                           label = "Separate charts",
                           value = FALSE)
      ),
-     column(3,
+     column(2,
             paste("Next data:", format(appdata$next_release, "%d %b %Y")))
    ),
 
@@ -47,10 +49,15 @@ ui <- navbarPage(title = "Inflation Explorer",
            chartUI("rpiprice", rpi_price)
   ),
   navbarMenu(title = "Other",
-             tabPanel("Stuff"),
+             tabPanel("Contribution to annual rate",
+                      fluidRow(
+                      column(4,datasetInput("cont_rate_sel", cont_rate_cdids)),
+                      column(8, plotOutput("cont_rate_cht"))
+                      )
+                      ),
              tabPanel("CPIH Monthly rate",
                 chartUI("mthrate", mth_rate)         
-             )
+                     )
   )
 )
 
@@ -71,6 +78,22 @@ server <- function(input, output, session) {
               period = reactive(input$period),
               date = reactive(input$startdate),
               facet = reactive(input$facet))
+  
+  cont_rate_data <- datasetServer("cont_rate_sel", data)
+  
+  output$cont_rate_cht <- renderPlot({
+    # chart function including facet param
+   x <-  ggplot(cont_rate_data()) +
+      geom_line(aes(x = date, y = value, colour = title)) +
+     ggplot2::scale_x_date(date_labels = "%b %Y") +
+     chart_theme
+   
+   if(input$facet) {
+     x + facet_wrap(vars(title))
+   } else {
+     x
+   }
+               })
 }
 
 shinyApp(ui, server)
