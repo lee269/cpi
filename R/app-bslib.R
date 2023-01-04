@@ -16,8 +16,14 @@ ann_rate_cdids <- cdid_list(data, "CPIH Annual rate (%)")
 rpi_price_cdids <- cdid_list(data, "RPI Average price (pence)")
 cont_rate_cdids <- cdid_list(data, "CPIH contribution to all items annual rate")
 
-hdr <- tagList(checkboxInput("facet", "Facet:"),
-               appdata$latest_data)
+hdr <- fluidRow(checkboxInput("facet", "Facet:"),
+               radioButtons("period", "Frequency (if needed):",
+                           choices = list(Month =  "M",
+                                          Quarter = "Q",
+                                          Year =  "Y"),
+                           selected = "M",
+                           inline = TRUE,)
+)
 
 
 ui <- page_navbar(title = "Inflation explorer",
