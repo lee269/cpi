@@ -4,12 +4,13 @@ library(dplyr)
 library(ggplot2)
 library(here)
 library(htmltools)
+library(ggbump)
 
 source(here("R", "mod_dataset.R"))
 source(here("R", "helpers.R"))
 
 appdata <- readRDS(here("data", "tidy", "appdata.rds"))
-data <- appdata$data
+data <- appdata$data %>% filter(period == "M")
 
 ann_rate_cdids <- cdid_list(data, "CPIH Annual rate (%)")
 rpi_price_cdids <- cdid_list(data, "RPI Average price (pence)")
@@ -47,7 +48,8 @@ ui <- page_navbar(title = "Inflation explorer",
                                                   card(datasetInput("cont_rate_sel", cont_rate_cdids)),
                                                   navs_pill_card(full_screen = TRUE,
                                                                  nav("Chart", plotOutput("cont_rate_cht")),
-                                                                 nav("Data", tableOutput("cont_rate_table")))
+                                                                 nav("Data", tableOutput("cont_rate_table")),
+                                                                 nav("Rank", plotOutput("cont_rate_rank")))
                                )
                                ),
                            nav("Item2")),
@@ -78,11 +80,28 @@ server <- function(input, output, session) {
   )
   
   cont_rate_data <- datasetServer("cont_rate_sel", rawdata = data)
-  output$cont_rate_table <- renderTable(cont_rate_data())
+  
+                    
+  output$cont_rate_table <- renderTable(cont_rate_data()) 
   output$cont_rate_cht <- renderPlot(
     pct_line_chart(cont_rate_data(), facet = input$facet)
   )
-  
+
+  output$cont_rate_rank <- renderPlot({
+    cont_rate_data() %>% 
+      group_by(date) %>% 
+      mutate(rank = rank(-value),
+             rank_text = scales::ordinal(rank(-value))) %>% 
+      ggplot() +
+      geom_bump(aes(x = date, y = rank, colour = title)) +
+      geom_point(aes(x = date, y = rank, colour = title), size = 3) +
+      scale_y_reverse(limits = c(12,1), n.breaks = 12) +
+      chart_theme
+      
+    })
+
+
+
 }
 
 shinyApp(ui, server)
