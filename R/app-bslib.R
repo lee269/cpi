@@ -13,6 +13,7 @@ data <- appdata$data
 
 ann_rate_cdids <- cdid_list(data, "CPIH Annual rate (%)")
 rpi_price_cdids <- cdid_list(data, "RPI Average price (pence)")
+cont_rate_cdids <- cdid_list(data, "CPIH contribution to all items annual rate")
 
 hdr <- tagList(checkboxInput("facet", "Facet:"),
                appdata$latest_data)
@@ -40,10 +41,18 @@ ui <- page_navbar(title = "Inflation explorer",
                                          )
                       ),
                   nav_menu("Menu",
-                           nav("Item"),
+                           nav("CPIH contribution to annual rate",
+                               layout_column_wrap(width = 1/2,
+                                                  style = css(grid_template_columns = "1fr 3fr"),
+                                                  card(datasetInput("cont_rate_sel", cont_rate_cdids)),
+                                                  navs_pill_card(full_screen = TRUE,
+                                                                 nav("Chart", plotOutput("cont_rate_cht")),
+                                                                 nav("Data", tableOutput("cont_rate_table")))
+                               )
+                               ),
                            nav("Item2")),
                   nav_spacer(),
-                  nav_item(checkboxInput("f", "facet",width = "100px"))
+                  nav_item("sdfkjsd")
 
 
 )
@@ -56,17 +65,23 @@ server <- function(input, output, session) {
   ann_rate_data <- datasetServer("ann_rate_sel", rawdata = data)
   output$ann_rate_table <- renderTable(ann_rate_data())
   output$ann_rate_cht <- renderPlot(
-    pct_line_chart(ann_rate_data(), facet = input$facet)
+    pct_line_chart(ann_rate_data(), facet = input$facet) +
+      theme(legend.position = "bottom")
   )
 
   
-  # CPIH annual rate
+  # RPI price rate
   rpi_price_data <- datasetServer("rpi_price_sel", rawdata = data)
   output$rpi_price_table <- renderTable(rpi_price_data())
   output$rpi_price_cht <- renderPlot(
     pct_line_chart(rpi_price_data(), facet = input$facet)
   )
   
+  cont_rate_data <- datasetServer("cont_rate_sel", rawdata = data)
+  output$cont_rate_table <- renderTable(cont_rate_data())
+  output$cont_rate_cht <- renderPlot(
+    pct_line_chart(cont_rate_data(), facet = input$facet)
+  )
   
 }
 
