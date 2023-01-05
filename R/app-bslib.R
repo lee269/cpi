@@ -14,8 +14,9 @@ data <- appdata$data %>% filter(period == "M")
 rank_data <- data %>% 
   filter(category == "CPIH contribution to all items annual rate") %>% 
   group_by(date) %>% 
-  mutate(rank = rank(-value),
-         rank_text = scales::ordinal(rank(-value))) %>% 
+  mutate(rank = rank(-value, ties.method = "random"),
+         rank_text = scales::ordinal(rank(-value)),
+         date = as.Date(date)) %>% 
   select(date, cdid, rank, rank_text)
 
 
@@ -23,13 +24,13 @@ ann_rate_cdids <- cdid_list(data, "CPIH Annual rate (%)")
 rpi_price_cdids <- cdid_list(data, "RPI Average price (pence)")
 cont_rate_cdids <- cdid_list(data, "CPIH contribution to all items annual rate")
 
-hdr <- fluidRow(checkboxInput("facet", "Facet:"),
-               radioButtons("period", "Frequency (if needed):",
-                           choices = list(Month =  "M",
-                                          Quarter = "Q",
-                                          Year =  "Y"),
-                           selected = "M",
-                           inline = TRUE,)
+hdr <- fluidRow(checkboxInput("facet", "Facet:")
+               # radioButtons("period", "Frequency (if needed):",
+               #             choices = list(Month =  "M",
+               #                            Quarter = "Q",
+               #                            Year =  "Y"),
+               #             selected = "M",
+               #             inline = TRUE)
 )
 
 
@@ -102,16 +103,20 @@ server <- function(input, output, session) {
 
   output$cont_rate_rank <- renderPlot({
     df <- cont_rate_data() %>% 
-      left_join(rank_data)
+      left_join(rank_data, by = c("date", "cdid")) %>% 
+      mutate(date = as.Date(date))
     
       ggplot(df, aes(x = date, y = rank, colour = title)) +
       geom_bump() +
       geom_point(size = 3) +
       geom_text(data = df %>% filter(date == max(date)),
-                aes(x = date + 1, label = title),
-                hjust = 0,) +
+                aes(x = date + 10, label = title),
+                hjust = 0) +
+      geom_text(data = df %>% filter(date == min(date)),
+                aes(x = date - 10, label = title),
+                hjust = 1,) +
       scale_y_reverse(limits = c(12,1), n.breaks = 12) +
-      scale_x_date(limits = c(NA, appdata$release_date + 10)) +
+      scale_x_date(expand = expansion(mult = c(0.3, 0.3))) +
       chart_theme +
       theme(legend.position = "none")
       
