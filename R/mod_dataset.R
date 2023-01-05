@@ -12,11 +12,11 @@ datasetInput <- function(id, cdids) {
   # https://stackoverflow.com/questions/20637248/shiny-4-small-textinput-boxes-side-by-side
   tagList(
     selectInput(NS(id, "cdid"), label = "Select series:", choices = cdids, multiple = TRUE),
-    selectInput(NS(id, "period"), "Frequency:",
-                choices = list(Month =  "M",
-                               Quarter = "Q",
-                               Year =  "Y"),
-                selected = "M"),
+    # selectInput(NS(id, "period"), "Frequency:",
+    #             choices = list(Month =  "M",
+    #                            Quarter = "Q",
+    #                            Year =  "Y"),
+    #             selected = "M"),
     dateInput(NS(id, "startdate"), label = "Start date:", value = "2020-01-01"),
     downloadButton(NS(id, "downloaddata"), label = "Download!")
   )
@@ -36,7 +36,7 @@ datasetServer <- function(id, rawdata) {
   moduleServer(id, function(input, output, session) {
     data <-reactive({
        rawdata %>% 
-        filter(cdid %in% input$cdid & period == input$period & date >= input$startdate)
+        filter(cdid %in% input$cdid & date >= input$startdate)
     })
     
     output$downloaddata <- downloadHandler(

@@ -11,6 +11,13 @@ source(here("R", "helpers.R"))
 
 appdata <- readRDS(here("data", "tidy", "appdata.rds"))
 data <- appdata$data %>% filter(period == "M")
+rank_data <- data %>% 
+  filter(category == "CPIH contribution to all items annual rate") %>% 
+  group_by(date) %>% 
+  mutate(rank = rank(-value),
+         rank_text = scales::ordinal(rank(-value))) %>% 
+  select(date, cdid, rank, rank_text)
+
 
 ann_rate_cdids <- cdid_list(data, "CPIH Annual rate (%)")
 rpi_price_cdids <- cdid_list(data, "RPI Average price (pence)")
@@ -94,15 +101,19 @@ server <- function(input, output, session) {
   )
 
   output$cont_rate_rank <- renderPlot({
-    cont_rate_data() %>% 
-      group_by(date) %>% 
-      mutate(rank = rank(-value),
-             rank_text = scales::ordinal(rank(-value))) %>% 
-      ggplot() +
-      geom_bump(aes(x = date, y = rank, colour = title)) +
-      geom_point(aes(x = date, y = rank, colour = title), size = 3) +
+    df <- cont_rate_data() %>% 
+      left_join(rank_data)
+    
+      ggplot(df, aes(x = date, y = rank, colour = title)) +
+      geom_bump() +
+      geom_point(size = 3) +
+      geom_text(data = df %>% filter(date == max(date)),
+                aes(x = date + 1, label = title),
+                hjust = 0,) +
       scale_y_reverse(limits = c(12,1), n.breaks = 12) +
-      chart_theme
+      scale_x_date(limits = c(NA, appdata$release_date + 10)) +
+      chart_theme +
+      theme(legend.position = "none")
       
     })
 
