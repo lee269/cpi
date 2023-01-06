@@ -24,14 +24,15 @@ ann_rate_cdids <- cdid_list(data, "CPIH Annual rate (%)")
 rpi_price_cdids <- cdid_list(data, "RPI Average price (pence)")
 cont_rate_cdids <- cdid_list(data, "CPIH contribution to all items annual rate")
 
-hdr <- fluidRow(checkboxInput("facet", "Facet:")
+hdr <- fluidRow(
+                checkboxInput("facet", "Separate charts")
                # radioButtons("period", "Frequency (if needed):",
                #             choices = list(Month =  "M",
                #                            Quarter = "Q",
                #                            Year =  "Y"),
                #             selected = "M",
                #             inline = TRUE)
-)
+                )
 
 
 ui <- page_navbar(title = "Inflation explorer",
@@ -40,8 +41,11 @@ ui <- page_navbar(title = "Inflation explorer",
                   nav("CPIH Annual Rate",
                     layout_column_wrap(width = 1/2,
                       style = css(grid_template_columns = "1fr 3fr"),
-                      card(datasetInput("ann_rate_sel", ann_rate_cdids)),
+                      card(height = "100%",
+                           card_body_fill(datasetInput("ann_rate_sel", ann_rate_cdids))
+                           ),
                         navs_pill_card(full_screen = TRUE,
+                                       card_header(class = "bg-primary", "CPIH Annual Rate"),
                                        nav("Chart", plotOutput("ann_rate_cht")),
                                        nav("Data", tableOutput("ann_rate_table")))
                         )
@@ -49,8 +53,11 @@ ui <- page_navbar(title = "Inflation explorer",
                   nav("RPI Prices",
                       layout_column_wrap(width = 1/2,
                                          style = css(grid_template_columns = "1fr 3fr"),
-                                         card(datasetInput("rpi_price_sel", rpi_price_cdids)),
+                                         card(height = "100%",
+                                              card_body_fill(datasetInput("rpi_price_sel", rpi_price_cdids))
+                                              ),
                                          navs_pill_card(full_screen = TRUE,
+                                                        card_header(class = "bg-primary", "RPI Average Prices"),
                                                         nav("Chart", plotOutput("rpi_price_cht")),
                                                         nav("Data", tableOutput("rpi_price_table")))
                                          )
@@ -59,8 +66,11 @@ ui <- page_navbar(title = "Inflation explorer",
                            nav("CPIH contribution to annual rate",
                                layout_column_wrap(width = 1/2,
                                                   style = css(grid_template_columns = "1fr 3fr"),
-                                                  card(datasetInput("cont_rate_sel", cont_rate_cdids)),
+                                                  card(height = "100%",
+                                                       card_body_fill(datasetInput("cont_rate_sel", cont_rate_cdids))
+                                                       ),
                                                   navs_pill_card(full_screen = TRUE,
+                                                                 card_header(class = "bg-primary", "CPIH Contribution to annual rate"),
                                                                  nav("Chart", plotOutput("cont_rate_cht")),
                                                                  nav("Data", tableOutput("cont_rate_table")),
                                                                  nav("Rank", plotOutput("cont_rate_rank")))
