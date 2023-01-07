@@ -18,7 +18,7 @@ datasetInput <- function(id, cdids) {
     #                            Year =  "Y"),
     #             selected = "M"),
     dateInput(NS(id, "startdate"), label = "Start date:", value = "2020-01-01"),
-    downloadButton(NS(id, "downloaddata"), label = "Download!")
+    downloadButton(NS(id, "downloaddata"), label = "Download data")
   )
 }
 

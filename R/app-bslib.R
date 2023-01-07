@@ -5,6 +5,7 @@ library(ggplot2)
 library(here)
 library(htmltools)
 library(ggbump)
+library(reactable)
 
 source(here("R", "mod_dataset.R"))
 source(here("R", "helpers.R"))
@@ -47,7 +48,7 @@ ui <- page_navbar(title = "Inflation explorer",
                         navs_pill_card(full_screen = TRUE,
                                        card_header(class = "bg-primary", "CPIH Annual Rate"),
                                        nav("Chart", plotOutput("ann_rate_cht")),
-                                       nav("Data", tableOutput("ann_rate_table")))
+                                       nav("Data", reactableOutput("ann_rate_table")))
                         )
                   ),
                   nav("RPI Prices",
@@ -59,7 +60,7 @@ ui <- page_navbar(title = "Inflation explorer",
                                          navs_pill_card(full_screen = TRUE,
                                                         card_header(class = "bg-primary", "RPI Average Prices"),
                                                         nav("Chart", plotOutput("rpi_price_cht")),
-                                                        nav("Data", tableOutput("rpi_price_table")))
+                                                        nav("Data", reactableOutput("rpi_price_table")))
                                          )
                       ),
                   nav_menu("Menu",
@@ -89,7 +90,20 @@ server <- function(input, output, session) {
   thematic::thematic_shiny()
   # CPIH annual rate
   ann_rate_data <- datasetServer("ann_rate_sel", rawdata = data)
-  output$ann_rate_table <- renderTable(ann_rate_data())
+  output$ann_rate_table <- renderReactable({ann_rate_data() %>% 
+                                          select(date, title, value, unit, cdid) %>%
+                                           reactable(columns = list(
+                                             date = colDef(name = "Date", minWidth = 35),
+                                             title = colDef(name = "Series", minWidth = 140),
+                                             value = colDef(name = "Value", minWidth = 25),
+                                             unit = colDef(name = "Unit", minWidth = 25),
+                                             cdid = colDef(name = "CDID", minWidth = 25)
+                                           ),
+                                                     showPageSizeOptions = TRUE,
+                                                     pageSizeOptions = c(5,10,25),
+                                                     defaultPageSize = 5,
+                                                     filterable = TRUE)
+    })
   output$ann_rate_cht <- renderPlot(
     pct_line_chart(ann_rate_data(), facet = input$facet) +
       theme(legend.position = "bottom")
@@ -98,18 +112,49 @@ server <- function(input, output, session) {
   
   # RPI price rate
   rpi_price_data <- datasetServer("rpi_price_sel", rawdata = data)
-  output$rpi_price_table <- renderTable(rpi_price_data())
+  output$rpi_price_table <- renderReactable({rpi_price_data() %>% 
+      select(date, title, value, unit, cdid) %>%
+      reactable(columns = list(
+        date = colDef(name = "Date", minWidth = 35),
+        title = colDef(name = "Series", minWidth = 140),
+        value = colDef(name = "Value", minWidth = 25),
+        unit = colDef(name = "Unit", minWidth = 25),
+        cdid = colDef(name = "CDID", minWidth = 25)
+      ),
+      showPageSizeOptions = TRUE,
+      pageSizeOptions = c(5,10,25),
+      defaultPageSize = 5,
+      filterable = TRUE)
+})
+  
   output$rpi_price_cht <- renderPlot(
     pct_line_chart(rpi_price_data(), facet = input$facet)
   )
   
+  
+  # CPI  contribution to annual rate
   cont_rate_data <- datasetServer("cont_rate_sel", rawdata = data)
   
-                    
-  output$cont_rate_table <- renderTable(cont_rate_data()) 
-  output$cont_rate_cht <- renderPlot(
-    pct_line_chart(cont_rate_data(), facet = input$facet)
-  )
+  output$cont_rate_table <- renderTable({
+    cont_rate_data() %>% 
+      left_join(rank_data, by = c("date", "cdid"))
+    }) 
+  output$cont_rate_cht <- renderPlot({
+    # pct_line_chart(cont_rate_data(), facet = input$facet)
+    cht <- cont_rate_data() %>% 
+      ggplot() +
+      geom_col(aes(x = date, y = value, fill = title)) +
+      chart_theme
+    
+    if(input$facet){
+    cht +
+        facet_wrap(vars(title)) +
+        theme(legend.position = "none")
+    } else {
+      cht
+    }
+    
+  })
 
   output$cont_rate_rank <- renderPlot({
     df <- cont_rate_data() %>% 
