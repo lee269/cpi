@@ -73,7 +73,7 @@ ui <- page_navbar(title = "Inflation explorer",
                                                   navs_pill_card(full_screen = TRUE,
                                                                  card_header(class = "bg-primary", "CPIH Contribution to annual rate"),
                                                                  nav("Chart", plotOutput("cont_rate_cht")),
-                                                                 nav("Data", tableOutput("cont_rate_table")),
+                                                                 nav("Data", reactableOutput("cont_rate_table")),
                                                                  nav("Rank", plotOutput("cont_rate_rank")))
                                )
                                ),
@@ -102,7 +102,8 @@ server <- function(input, output, session) {
                                                      showPageSizeOptions = TRUE,
                                                      pageSizeOptions = c(5,10,25),
                                                      defaultPageSize = 5,
-                                                     filterable = TRUE)
+                                                     filterable = TRUE, 
+                                           compact = TRUE)
     })
   output$ann_rate_cht <- renderPlot(
     pct_line_chart(ann_rate_data(), facet = input$facet) +
@@ -124,7 +125,8 @@ server <- function(input, output, session) {
       showPageSizeOptions = TRUE,
       pageSizeOptions = c(5,10,25),
       defaultPageSize = 5,
-      filterable = TRUE)
+      filterable = TRUE,
+      compact = TRUE)
 })
   
   output$rpi_price_cht <- renderPlot(
@@ -135,10 +137,24 @@ server <- function(input, output, session) {
   # CPI  contribution to annual rate
   cont_rate_data <- datasetServer("cont_rate_sel", rawdata = data)
   
-  output$cont_rate_table <- renderTable({
+  output$cont_rate_table <- renderReactable({
     cont_rate_data() %>% 
-      left_join(rank_data, by = c("date", "cdid"))
+      select(date, title, value, unit, cdid) %>%
+      reactable(columns = list(
+        date = colDef(name = "Date", minWidth = 35),
+        title = colDef(name = "Series", minWidth = 140),
+        value = colDef(name = "Value", minWidth = 25),
+        unit = colDef(name = "Unit", minWidth = 25),
+        cdid = colDef(name = "CDID", minWidth = 25)
+      ),
+      showPageSizeOptions = TRUE,
+      pageSizeOptions = c(5,10,25),
+      defaultPageSize = 5,
+      filterable = TRUE,
+      compact = TRUE)
+    
     }) 
+  
   output$cont_rate_cht <- renderPlot({
     # pct_line_chart(cont_rate_data(), facet = input$facet)
     cht <- cont_rate_data() %>% 
