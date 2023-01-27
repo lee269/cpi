@@ -10,6 +10,7 @@ library(reactable)
 source(here("R", "mod_dataset.R"))
 source(here("R", "helpers.R"))
 
+# Set up data
 appdata <- readRDS(here("data", "tidy", "appdata.rds"))
 data <- appdata$data %>% filter(period == "M")
 rank_data <- data %>% 
@@ -25,20 +26,19 @@ ann_rate_cdids <- cdid_list(data, "CPIH Annual rate (%)")
 rpi_price_cdids <- cdid_list(data, "RPI Average price (pence)")
 cont_rate_cdids <- cdid_list(data, "CPIH contribution to all items annual rate")
 
+# themes
+light <- bs_theme(bootswatch = "minty")
+dark <- bs_theme(bg = "black", fg = "white", primary = "purple")
+
 hdr <- fluidRow(
                 checkboxInput("facet", "Separate charts"),
-                paste("Latest data: ", format(appdata$latest_data, "%B %Y"))
-               # radioButtons("period", "Frequency (if needed):",
-               #             choices = list(Month =  "M",
-               #                            Quarter = "Q",
-               #                            Year =  "Y"),
-               #             selected = "M",
-               #             inline = TRUE)
+                paste("Latest data: ", format(appdata$latest_data, "%B %Y")),
+                checkboxInput("dark_mode", "Dark mode")
                 )
 
 
 ui <- page_navbar(title = "Inflation explorer",
-                  theme = bs_theme(bootswatch = "minty"),
+                  theme = light,
                   header = hdr,
                   nav("CPIH Annual Rate",
                     layout_column_wrap(width = 1/2,
@@ -80,7 +80,7 @@ ui <- page_navbar(title = "Inflation explorer",
                                ),
                            nav("Item2")),
                   nav_spacer(),
-                  nav_item("sdfkjsd")
+                  nav_item("jskdfb")
 
 
 )
@@ -89,6 +89,10 @@ ui <- page_navbar(title = "Inflation explorer",
 
 server <- function(input, output, session) {
   thematic::thematic_shiny()
+  observe(session$setCurrentTheme(
+    if (isTRUE(input$dark_mode)) dark else light
+  ))
+  
   # CPIH annual rate
   ann_rate_data <- datasetServer("ann_rate_sel", rawdata = data)
   output$ann_rate_table <- renderReactable({ann_rate_data() %>% 
