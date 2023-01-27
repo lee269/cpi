@@ -26,7 +26,8 @@ rpi_price_cdids <- cdid_list(data, "RPI Average price (pence)")
 cont_rate_cdids <- cdid_list(data, "CPIH contribution to all items annual rate")
 
 hdr <- fluidRow(
-                checkboxInput("facet", "Separate charts")
+                checkboxInput("facet", "Separate charts"),
+                paste("Latest data: ", format(appdata$latest_data, "%B %Y"))
                # radioButtons("period", "Frequency (if needed):",
                #             choices = list(Month =  "M",
                #                            Quarter = "Q",

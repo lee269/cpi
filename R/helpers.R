@@ -90,7 +90,7 @@ pct_line_chart <- function(data, facet = FALSE){
 
   chart <- data %>% 
     ggplot2::ggplot() +
-    ggplot2::geom_line(aes(x = date, y = value, colour = title), size = 1) +
+    ggplot2::geom_line(aes(x = date, y = value, colour = title), linewidth = 1) +
     ggplot2::scale_x_date(date_labels = "%b %Y") +
     chart_theme
 
