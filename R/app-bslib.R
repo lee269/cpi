@@ -78,7 +78,12 @@ ui <- page_navbar(title = "Inflation explorer",
                                                                  nav("Rank", plotOutput("cont_rate_rank")))
                                )
                                ),
-                           nav("Item2")),
+                           nav("About",
+                               card(height = "100%",
+                                    tags$p(paste("Some descriptive text"))
+                                    )
+                               )
+                           ),
                   nav_spacer(),
                   nav_item("jskdfb")
 
